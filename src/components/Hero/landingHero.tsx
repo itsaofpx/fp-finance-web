@@ -1,6 +1,5 @@
 "use client";
 
-import axios from "axios";
 import { ArrowRight, PieChart, List, Wrench, BookOpen } from "lucide-react";
 
 const features = [
