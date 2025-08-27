@@ -1,8 +1,9 @@
+"use client"
 import { Button, TextField, Alert, CircularProgress } from "@mui/material";
 import { useState } from "react";
 import axios from "axios";
 import DisclaimerFooter from "@/components/Footer/disclaimerFooter";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 
 export interface ISupportLevelResponse {
   firstEntry: number;

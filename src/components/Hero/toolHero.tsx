@@ -1,3 +1,4 @@
+"use client";
 import React, { useState } from "react";
 import Link from "next/link";
 
@@ -6,63 +7,63 @@ export default function ToolListHero() {
     {
       title: "คำนวณค่าเฉลี่ยหุ้น",
       description: "คำนวณราคาเฉลี่ยของหุ้นเพื่อวางแผนการลงทุน",
-      path: "/average-calculator",
+      path: "tool/average-calculator",
       icon: "📊",
       category: "การวิเคราะห์",
     },
     {
       title: "แบ่งเงินลงทุนกับเงินสดเก็บออม",
       description: "จัดสรรเงินระหว่างการลงทุนและการออมอย่างสมดุล",
-      path: "/money-allocation",
+      path: "tool/money-allocation",
       icon: "💰",
       category: "การจัดสรร",
     },
     {
-      title: "แนวรับ 5 ไม้",
+      title: "แนวรับเบื้องต้น",
       description: "วิเคราะห์แนวรับและแนวต้านของราคาหุ้น",
-      path: "/support",
+      path: "tool/support",
       icon: "📈",
       category: "การวิเคราะห์",
     },
     {
       title: "คำนวณการขายต้นทุนแบบ FIFO",
       description: "คำนวณกำไรขาดทุนด้วยวิธี First In First Out",
-      path: "/fifo-calculator",
+      path: "tool/fifo-calculator",
       icon: "🔄",
       category: "การคำนวณ",
     },
     {
       title: "คำนวณกำไรเป้าหมาย",
       description: "กำหนดเป้าหมายกำไรและคำนวณจุดขาย",
-      path: "/profit-target",
+      path: "tool/profit-target",
       icon: "🎯",
       category: "การวางแผน",
     },
     {
       title: "ออมเท่าไหร่ถึงได้เป้าหมายตามกำหนด",
       description: "คำนวณจำนวนเงินที่ต้องออมเพื่อให้ถึงเป้าหมาย",
-      path: "/savings-goal",
+      path: "tool/savings-goal",
       icon: "🏆",
       category: "การวางแผน",
     },
     {
       title: "คำนวณดอกเบี้ยทบต้น",
       description: "คำนวณการเติบโตของเงินด้วยดอกเบี้ยทบต้น",
-      path: "/compound-interest",
+      path: "tool/compound-interest",
       icon: "📈",
       category: "การคำนวณ",
     },
     {
       title: "คำนวณเงินปันผล",
       description: "คำนวณผลตอบแทนจากเงินปันผลรายปี",
-      path: "/dividend-calculator",
+      path: "tool/dividend-calculator",
       icon: "💎",
       category: "การคำนวณ",
     },
     {
       title: "คำนวณภาษีการลงทุน",
       description: "คำนวณภาษีจากกำไรการลงทุนและการซื้อขาย",
-      path: "/tax-calculator",
+      path: "tool/tax-calculator",
       icon: "🧾",
       category: "การคำนวณ",
     },
@@ -100,8 +101,7 @@ export default function ToolListHero() {
               </span>
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              เครื่องมือครบครันสำหรับการคำนวณ
-              และวางแผนการลงทุนอย่างมืออาชีพ
+              เครื่องมือครบครันสำหรับการคำนวณ และวางแผนการลงทุนอย่างมืออาชีพ
             </p>
           </div>
 

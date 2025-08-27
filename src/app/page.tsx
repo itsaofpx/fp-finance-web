@@ -1,7 +1,6 @@
 import HeroSection from "@/components/Hero/landingHero";
-import NavBar from "@/components/NavBar/page";
 
-export default function LandingPage() {
+export default function HomePage() {
   return (
     <div className="min-h-screen">
       <HeroSection />

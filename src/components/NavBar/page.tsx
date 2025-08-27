@@ -3,7 +3,7 @@
 import { Menu, X } from "lucide-react";
 import { useEffect, useState } from "react";
 import Link from "next/link";
-import { useRouter } from "next/router";
+import { useRouter } from "next/navigation";
 import { parseCookies, setCookie, destroyCookie } from "nookies";
 
 const NavBar = () => {
@@ -29,7 +29,7 @@ const NavBar = () => {
           {/* Logo */}
           <div className="flex items-center">
             <button
-              onClick={() => handleNavigation("landing")}
+              onClick={() => handleNavigation("/")}
               className="text-xl font-bold text-white"
             >
               Finance Pro

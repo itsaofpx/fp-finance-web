@@ -1,23 +1,30 @@
+"use client";
 import { Button, TextField, Alert, CircularProgress } from "@mui/material";
 import { useState } from "react";
 import axios from "axios";
 import DisclaimerFooter from "@/components/Footer/disclaimerFooter";
+import { useRouter } from "next/navigation";
 
-export interface IMoneyAllocationResponse {
-  totalInvestmentAmount: number;
-  totalSavingsAmount: number;
-  actualInvestmentAmount: number;
-  weeklyInvestmentAmount: number;
+export interface IAverageCostInvestResponse {
+  currentTotalCost: number;
+  additionalSharesPurchased: number;
+  totalSharesAfterPurchase: number;
+  newTotalCost: number;
+  newAverageCostPerShare: number;
+  currentPortfolioValue: number;
+  profitLoss: number;
+  profitLossPercentage: number;
 }
 
-const MoneyAllocation = () => {
+const averageCostAverage = () => {
   const [formData, setFormData] = useState({
-    totalMoney: "",
-    investPercent: "",
-    savingPercent: "",
+    currentStockUnits: "",
+    averageCostPerShare: "",
+    currentMarketPrice: "",
+    additionalInvestmentAmount: "",
   });
-
-  const [result, setResult] = useState<IMoneyAllocationResponse | null>(null);
+  const router = useRouter();
+  const [result, setResult] = useState<IAverageCostInvestResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -31,33 +38,34 @@ const MoneyAllocation = () => {
     };
 
   const handleBackClick = () => {
-    window.location.href = "http://localhost:3000/tool";
+    router.push("/tool");
   };
 
   const validateForm = () => {
-    const { totalMoney, investPercent, savingPercent } = formData;
+    const {
+      currentStockUnits,
+      averageCostPerShare,
+      currentMarketPrice,
+      additionalInvestmentAmount,
+    } = formData;
 
-    if (!totalMoney || !investPercent || !savingPercent) {
+    if (
+      !currentStockUnits ||
+      !averageCostPerShare ||
+      !currentMarketPrice ||
+      !additionalInvestmentAmount
+    ) {
       setError("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return false;
     }
 
     if (
-      parseFloat(totalMoney) <= 0 ||
-      parseFloat(investPercent) < 0 ||
-      parseFloat(savingPercent) < 0
+      parseFloat(currentStockUnits) <= 0 ||
+      parseFloat(averageCostPerShare) <= 0 ||
+      parseFloat(currentMarketPrice) <= 0 ||
+      parseFloat(additionalInvestmentAmount) <= 0
     ) {
-      setError("กรุณากรอกตัวเลขที่ถูกต้อง");
-      return false;
-    }
-
-    if (parseFloat(investPercent) > 100) {
-      setError("เปอร์เซ็นต์การลงทุนไม่สามารถเกิน 100% ได้");
-      return false;
-    }
-
-    if (parseFloat(savingPercent) > 100) {
-      setError("เปอร์เซ็นต์การออมไม่สามารถเกิน 100% ได้");
+      setError("กรุณากรอกตัวเลขที่มากกว่า 0");
       return false;
     }
 
@@ -73,13 +81,16 @@ const MoneyAllocation = () => {
 
     try {
       const payload = {
-        totalMoney: parseFloat(formData.totalMoney),
-        investPercent: parseFloat(formData.investPercent),
-        savingPercent: parseFloat(formData.savingPercent),
+        currentStockUnits: parseFloat(formData.currentStockUnits),
+        averageCostPerShare: parseFloat(formData.averageCostPerShare),
+        currentMarketPrice: parseFloat(formData.currentMarketPrice),
+        additionalInvestmentAmount: parseFloat(
+          formData.additionalInvestmentAmount
+        ),
       };
 
       const response = await axios.post(
-        "http://localhost:3001/tool/money-allocation",
+        "http://localhost:3001/tool/average-cost",
         payload,
         {
           headers: {
@@ -91,7 +102,7 @@ const MoneyAllocation = () => {
 
       setResult(response.data);
     } catch (err) {
-      console.error("Error calculating money allocation:", err);
+      console.error("Error calculating average cost:", err);
       setError("เกิดข้อผิดพลาดในการคำนวณ กรุณาลองใหม่อีกครั้ง");
     } finally {
       setLoading(false);
@@ -99,38 +110,44 @@ const MoneyAllocation = () => {
   };
 
   const getValueColor = (key: string, value: number) => {
-    if (
-      key === "actualInvestmentAmount" &&
-      result &&
-      value < result.totalInvestmentAmount
-    ) {
-      return "text-yellow-400";
+    if (key === "profitLoss" || key === "profitLossPercentage") {
+      return value >= 0 ? "text-green-400" : "text-red-400";
     }
     return "text-gray-100";
   };
 
   const getFieldLabel = (key: string) => {
     const labels: { [key: string]: string } = {
-      totalInvestmentAmount: "เงินที่จัดสรรไปลงทุน",
-      totalSavingsAmount: "เงินที่เก็บเป็นเงินสด (จากส่วนลงทุน)",
-      actualInvestmentAmount: "เงินลงทุนจริง",
-      weeklyInvestmentAmount: "เงินลงทุนรายสัปดาห์",
+      currentTotalCost: "มูลค่าการลงทุนเดิม",
+      additionalSharesPurchased: "หุ้นที่ซื้อเพิ่ม",
+      totalSharesAfterPurchase: "จำนวนหุ้นรวม",
+      newTotalCost: "มูลค่าการลงทุนรวม",
+      newAverageCostPerShare: "ราคาเฉลี่ยใหม่ต่อหุ้น",
+      currentPortfolioValue: "มูลค่าพอร์ตปัจจุบัน",
+      profitLoss: "กำไร/ขาดทุน",
+      profitLossPercentage: "เปอร์เซ็นต์กำไร/ขาดทุน",
     };
     return labels[key] || key;
   };
 
   const getFieldDescription = (key: string) => {
     const descriptions: { [key: string]: string } = {
-      totalInvestmentAmount: `${formData.investPercent}% ของเงินทั้งหมด`,
-      totalSavingsAmount: `${formData.savingPercent}% ของเงินลงทุน (เก็บเป็นเงินสด)`,
-      actualInvestmentAmount: "เงินลงทุนจริง",
-      weeklyInvestmentAmount: "แผนการลงทุนรายสัปดาห์",
+      currentTotalCost: "เงินที่ลงทุนไปแล้ว",
+      additionalSharesPurchased: "จำนวนหุ้นที่ได้จากเงินลงทุนเพิ่ม",
+      totalSharesAfterPurchase: "หุ้นเดิม + หุ้นที่ซื้อเพิ่ม",
+      newTotalCost: "เงินลงทุนเดิม + เงินลงทุนเพิ่ม",
+      newAverageCostPerShare: "ราคาเฉลี่ยหลังลงทุนเพิ่ม",
+      currentPortfolioValue: "มูลค่าตามราคาตลาดปัจจุบัน",
+      profitLoss: "จากราคาตลาดปัจจุบัน",
+      profitLossPercentage: "ผลตอบแทนจากการลงทุน",
     };
     return descriptions[key];
   };
 
   const getFieldUnit = (key: string) => {
-    return " บาท";
+    if (key.includes("Shares") || key.includes("Units")) return " หุ้น";
+    if (key.includes("Percentage")) return "%";
+    return " บาท / $";
   };
 
   return (
@@ -175,15 +192,15 @@ const MoneyAllocation = () => {
                   strokeLinecap="round"
                   strokeLinejoin="round"
                   strokeWidth={2}
-                  d="M12 8c-1.657 0-3 .895-3 2s1.343 2 3 2 3 .895 3 2-1.343 2-3 2m0-8c1.11 0 2.08.402 2.599 1M12 8V7m0 1v8m0 0v1m0-1c-1.11 0-2.08-.402-2.599-1M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
+                  d="M9 19v-6a2 2 0 00-2-2H5a2 2 0 00-2 2v6a2 2 0 002 2h2a2 2 0 002-2zm0 0V9a2 2 0 012-2h2a2 2 0 012 2v10m-6 0a2 2 0 002 2h2a2 2 0 002-2m0 0V5a2 2 0 012-2h2a2 2 0 012 2v14a2 2 0 01-2 2h-2a2 2 0 01-2-2z"
                 />
               </svg>
             </div>
             <h1 className="text-3xl font-bold text-gray-100 mb-2">
-              จัดสรรเงิน
+              คำนวณค่าเฉลี่ยหุ้น
             </h1>
             <p className="text-gray-400 text-lg">
-              เครื่องมือจัดสรรเงินเพื่อการลงทุนและการออม
+              เครื่องมือคำนวณราคาเฉลี่ยของหุ้นเพื่อวางแผนการลงทุน
             </p>
           </div>
 
@@ -208,77 +225,20 @@ const MoneyAllocation = () => {
               </div>
             )}
 
-            {/* Flow Explanation */}
-            <div className="mb-8 p-6 bg-gradient-to-r from-blue-900/30 to-purple-500/30 rounded-xl border border-blue-800/30">
-              <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center">
-                <svg
-                  className="w-5 h-5 mr-2 text-blue-400"
-                  fill="none"
-                  stroke="currentColor"
-                  viewBox="0 0 24 24"
-                >
-                  <path
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    strokeWidth={2}
-                    d="M13 16h-1v-4h-1m1-4h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z"
-                  />
-                </svg>
-                วิธีการจัดสรรเงิน
-              </h3>
-              <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                    1
-                  </div>
-                  <div>
-                    <div className="text-gray-200 font-medium">เงินทั้งหมด</div>
-                    <div className="text-gray-400">
-                      เช่น เงินเดือน 100,000 บาท
-                    </div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                    2
-                  </div>
-                  <div>
-                    <div className="text-gray-200 font-medium">
-                      แบ่งเพื่อลงทุน
-                    </div>
-                    <div className="text-gray-400">เช่น 60% = 60,000 บาท</div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center text-white font-bold">
-                    3
-                  </div>
-                  <div>
-                    <div className="text-gray-200 font-medium">
-                      เก็บเป็นเงินสด
-                    </div>
-                    <div className="text-gray-400">
-                      เช่น 30% ของ 60,000 = 18,000
-                    </div>
-                  </div>
-                </div>
-              </div>
-            </div>
-
             {/* Form */}
             <div className="space-y-6">
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
-                <div className="space-y-2 lg:col-span-2">
+                <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    💰 เงินทั้งหมด (บาท)
+                    จำนวนหุ้นปัจจุบัน (หุ้น)
                   </label>
                   <TextField
-                    placeholder="เช่น 100,000"
+                    placeholder="เช่น 100"
                     variant="outlined"
                     fullWidth
                     type="number"
-                    value={formData.totalMoney}
-                    onChange={handleInputChange("totalMoney")}
+                    value={formData.currentStockUnits}
+                    onChange={handleInputChange("currentStockUnits")}
                     disabled={loading}
                     inputProps={{ step: "0.01", min: "0" }}
                     sx={{
@@ -306,24 +266,21 @@ const MoneyAllocation = () => {
                       },
                     }}
                   />
-                  <div className="text-xs text-gray-500 mt-1">
-                    เช่น เงินเดือน, โบนัส, หรือเงินที่มีอยู่ทั้งหมด
-                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    📈 เปอร์เซ็นต์เพื่อลงทุน (%)
+                    ราคาเฉลี่ยปัจจุบัน (บาท / $)
                   </label>
                   <TextField
-                    placeholder="เช่น 60"
+                    placeholder="เช่น 50.00"
                     variant="outlined"
                     fullWidth
                     type="number"
-                    value={formData.investPercent}
-                    onChange={handleInputChange("investPercent")}
+                    value={formData.averageCostPerShare}
+                    onChange={handleInputChange("averageCostPerShare")}
                     disabled={loading}
-                    inputProps={{ step: "0.1", min: "0", max: "100" }}
+                    inputProps={{ step: "0.01", min: "0" }}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         backgroundColor: "#374151",
@@ -349,24 +306,21 @@ const MoneyAllocation = () => {
                       },
                     }}
                   />
-                  <div className="text-xs text-gray-500 mt-1">
-                    จากเงินทั้งหมด จะแบ่งเท่าไหร่เพื่อลงทุน
-                  </div>
                 </div>
 
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
-                    💵 เปอร์เซ็นต์เก็บเป็นเงินสด (%)
+                    ราคาตลาดปัจจุบัน (บาท / $)
                   </label>
                   <TextField
-                    placeholder="เช่น 30"
+                    placeholder="เช่น 45.00"
                     variant="outlined"
                     fullWidth
                     type="number"
-                    value={formData.savingPercent}
-                    onChange={handleInputChange("savingPercent")}
+                    value={formData.currentMarketPrice}
+                    onChange={handleInputChange("currentMarketPrice")}
                     disabled={loading}
-                    inputProps={{ step: "0.1", min: "0", max: "100" }}
+                    inputProps={{ step: "0.01", min: "0" }}
                     sx={{
                       "& .MuiOutlinedInput-root": {
                         backgroundColor: "#374151",
@@ -392,9 +346,46 @@ const MoneyAllocation = () => {
                       },
                     }}
                   />
-                  <div className="text-xs text-gray-500 mt-1">
-                    จากเงินลงทุน จะเก็บเท่าไหร่เป็นเงินสด
-                  </div>
+                </div>
+
+                <div className="space-y-2">
+                  <label className="block text-sm font-medium text-gray-300 mb-2">
+                    จำนวนเงินลงทุนเพิ่ม (บาท / $)
+                  </label>
+                  <TextField
+                    placeholder="เช่น 10,000"
+                    variant="outlined"
+                    fullWidth
+                    type="number"
+                    value={formData.additionalInvestmentAmount}
+                    onChange={handleInputChange("additionalInvestmentAmount")}
+                    disabled={loading}
+                    inputProps={{ step: "0.01", min: "0" }}
+                    sx={{
+                      "& .MuiOutlinedInput-root": {
+                        backgroundColor: "#374151",
+                        borderRadius: "12px",
+                        height: "56px",
+                        "& fieldset": {
+                          borderColor: "#4B5563",
+                        },
+                        "&:hover fieldset": {
+                          borderColor: "#6B7280",
+                        },
+                        "&.Mui-focused fieldset": {
+                          borderColor: "#9CA3AF",
+                          borderWidth: "2px",
+                        },
+                      },
+                      "& .MuiInputBase-input": {
+                        color: "#F9FAFB",
+                        fontSize: "16px",
+                        "&::placeholder": {
+                          color: "#9CA3AF",
+                        },
+                      },
+                    }}
+                  />
                 </div>
               </div>
 
@@ -435,7 +426,7 @@ const MoneyAllocation = () => {
                       กำลังคำนวณ...
                     </>
                   ) : (
-                    "คำนวณการจัดสรรเงิน"
+                    "คำนวณค่าเฉลี่ยหุ้น"
                   )}
                 </Button>
               </div>
@@ -465,7 +456,7 @@ const MoneyAllocation = () => {
                   </svg>
                 </div>
                 <h3 className="text-2xl font-bold text-gray-100 mb-2">
-                  ผลการจัดสรรเงิน
+                  ผลการคำนวณ
                 </h3>
                 <div className="w-16 h-0.5 bg-gray-600 mx-auto"></div>
               </div>
@@ -474,8 +465,10 @@ const MoneyAllocation = () => {
               <div className="space-y-4">
                 {Object.entries(result).map(([key, value]) => {
                   const isImportant =
-                    key === "actualInvestmentAmount" ||
-                    key === "weeklyInvestmentAmount";
+                    key === "newAverageCostPerShare" ||
+                    key === "currentPortfolioValue" ||
+                    key === "profitLoss" ||
+                    key === "profitLossPercentage";
 
                   return (
                     <div
@@ -491,13 +484,14 @@ const MoneyAllocation = () => {
                         <div className="flex items-center space-x-3">
                           <div
                             className={`w-2 h-2 rounded-full ${
-                              key === "totalInvestmentAmount"
+                              key === "profitLoss" ||
+                              key === "profitLossPercentage"
+                                ? value >= 0
+                                  ? "bg-green-400"
+                                  : "bg-red-400"
+                                : key === "newAverageCostPerShare"
                                 ? "bg-blue-400"
-                                : key === "totalSavingsAmount"
-                                ? "bg-green-400"
-                                : key === "actualInvestmentAmount"
-                                ? "bg-yellow-400"
-                                : "bg-purple-400"
+                                : "bg-gray-500"
                             }`}
                           ></div>
                           <div>
@@ -528,13 +522,33 @@ const MoneyAllocation = () => {
                               {getFieldUnit(key)}
                             </span>
                           </div>
-                          {key === "weeklyInvestmentAmount" && (
-                            <div className="text-sm mt-1 text-purple-400">
-                              📅 แผนรายสัปดาห์
+                          {key === "profitLoss" && (
+                            <div
+                              className={`text-sm mt-1 ${
+                                value >= 0 ? "text-green-400" : "text-red-400"
+                              }`}
+                            >
+                              {value >= 0 ? "📈 กำไร" : "📉 ขาดทุน"}
                             </div>
                           )}
                         </div>
                       </div>
+
+                      {/* Progress bar for percentage */}
+                      {key === "profitLossPercentage" && (
+                        <div className="mt-4">
+                          <div className="w-full bg-gray-600 rounded-full h-2">
+                            <div
+                              className={`h-2 rounded-full transition-all duration-500 ${
+                                value >= 0 ? "bg-green-400" : "bg-red-400"
+                              }`}
+                              style={{
+                                width: `${Math.min(Math.abs(value), 100)}%`,
+                              }}
+                            ></div>
+                          </div>
+                        </div>
+                      )}
                     </div>
                   );
                 })}
@@ -548,4 +562,4 @@ const MoneyAllocation = () => {
   );
 };
 
-export default MoneyAllocation;
+export default averageCostAverage;
