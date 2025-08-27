@@ -4,7 +4,6 @@ import NavBar from "@/components/NavBar/page";
 export default function ToolPage() {
   return (
     <div className="min-h-screen">
-      <NavBar />
       <ToolListHero />
     </div>
   );

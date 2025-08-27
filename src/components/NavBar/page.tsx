@@ -1,11 +1,26 @@
 "use client";
 
 import { Menu, X } from "lucide-react";
-import { useState } from "react";
+import { useEffect, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/router";
+import { parseCookies, setCookie, destroyCookie } from "nookies";
 
 const NavBar = () => {
   const [isOpen, setIsOpen] = useState(false);
+  const [isLogin, setIsLogin] = useState(false);
+  const router = useRouter();
+
+  useEffect(() => {
+    const cookies = parseCookies();
+    const accessToken = cookies.accessToken;
+    setIsLogin(!!accessToken);
+  }, []);
+
+  // Function to handle navigation
+  const handleNavigation = (path: string) => {
+    router.push(path);
+  };
 
   return (
     <nav className="fixed top-0 w-full z-50 bg-gray-900/95 backdrop-blur-md border-b border-gray-800">
@@ -13,31 +28,42 @@ const NavBar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <Link href="/" className="text-xl font-bold text-white">
+            <button
+              onClick={() => handleNavigation("landing")}
+              className="text-xl font-bold text-white"
+            >
               Finance Pro
-            </Link>
+            </button>
           </div>
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-8">
-            <Link
-              href="#features"
+            <button
+              onClick={() => handleNavigation("tool")}
               className="text-gray-300 hover:text-white transition-all duration-300 hover:scale-105"
             >
-              ฟีเจอร์
-            </Link>
-            <Link
-              href="#pricing"
+              เครื่องมือ
+            </button>
+            <button
+              onClick={() => handleNavigation("pricing")}
               className="text-gray-300 hover:text-white transition-all duration-300 hover:scale-105"
             >
               ราคา
-            </Link>
-            <Link
-              href="#about"
+            </button>
+            <button
+              onClick={() => handleNavigation("about")}
               className="text-gray-300 hover:text-white transition-all duration-300 hover:scale-105"
             >
               เกี่ยวกับเรา
-            </Link>
+            </button>
+            {isLogin && (
+              <button
+                onClick={() => handleNavigation("profile")}
+                className="text-gray-300 hover:text-white transition-all duration-300 hover:scale-105"
+              >
+                โปรไฟล์
+              </button>
+            )}
           </div>
 
           {/* Mobile Menu Button */}
@@ -54,24 +80,32 @@ const NavBar = () => {
         {isOpen && (
           <div className="md:hidden bg-gray-900 border-t border-gray-800">
             <div className="px-2 pt-2 pb-3 space-y-1">
-              <Link
-                href="#features"
-                className="block px-3 py-2 text-gray-300 hover:text-white transition-all duration-300"
+              <button
+                onClick={() => handleNavigation("#features")}
+                className="block w-full text-left px-3 py-2 text-gray-300 hover:text-white transition-all duration-300"
               >
                 ฟีเจอร์
-              </Link>
-              <Link
-                href="#pricing"
-                className="block px-3 py-2 text-gray-300 hover:text-white transition-all duration-300"
+              </button>
+              <button
+                onClick={() => handleNavigation("#pricing")}
+                className="block w-full text-left px-3 py-2 text-gray-300 hover:text-white transition-all duration-300"
               >
                 ราคา
-              </Link>
-              <Link
-                href="#about"
-                className="block px-3 py-2 text-gray-300 hover:text-white transition-all duration-300"
+              </button>
+              <button
+                onClick={() => handleNavigation("#about")}
+                className="block w-full text-left px-3 py-2 text-gray-300 hover:text-white transition-all duration-300"
               >
                 เกี่ยวกับเรา
-              </Link>
+              </button>
+              {isLogin && (
+                <button
+                  onClick={() => handleNavigation("/profile")}
+                  className="block w-full text-left px-3 py-2 text-gray-300 hover:text-white transition-all duration-300"
+                >
+                  โปรไฟล์
+                </button>
+              )}
             </div>
           </div>
         )}
