@@ -18,16 +18,9 @@ export default function ToolListHero() {
       category: "การจัดสรร",
     },
     {
-      title: "ลงทุนตามสัดส่วน",
-      description: "คำนวณการลงทุนตามสัดส่วนพอร์ตที่กำหนด",
-      path: "/portfolio-ratio",
-      icon: "⚖️",
-      category: "การจัดสรร",
-    },
-    {
       title: "แนวรับ 5 ไม้",
       description: "วิเคราะห์แนวรับและแนวต้านของราคาหุ้น",
-      path: "/support-resistance",
+      path: "/support",
       icon: "📈",
       category: "การวิเคราะห์",
     },
@@ -103,11 +96,11 @@ export default function ToolListHero() {
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
               เครื่องมือการลงทุน
               <span className="block text-gray-400 text-3xl md:text-4xl font-normal mt-2">
-                สำหรับนักลงทุนทุกระดับ
+                สำหรับบุคคลทั่วไป
               </span>
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              เครื่องมือครบครันสำหรับการวิเคราะห์ คำนวณ
+              เครื่องมือครบครันสำหรับการคำนวณ
               และวางแผนการลงทุนอย่างมืออาชีพ
             </p>
           </div>
