@@ -18,10 +18,7 @@ export default function RootLayout({
   if (isToolPath) {
     return (
       <html lang="en">
-        <body>
-          {children}
-          <DisclaimerFooter />
-        </body>
+        <body>{children}</body>
       </html>
     );
   }
