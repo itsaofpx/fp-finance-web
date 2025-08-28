@@ -1,113 +1,220 @@
-import React from 'react';
-import { Calendar, Clock, TrendingUp, TrendingDown, User, Eye } from 'lucide-react';
+"use client";
 
-interface NewsArticle {
-  id: number;
+import { useEffect, useState } from "react";
+import React from "react";
+import axios from "axios";
+import { Calendar, Clock } from "lucide-react";
+
+interface AINewsArticle {
   title: string;
-  excerpt: string;
-  author: string;
-  date: string;
-  readTime: string;
-  category: string;
-  imageUrl: string;
-  views: number;
-  trending: 'up' | 'down' | null;
+  content: string;
+  link?: string;
 }
 
-const mockNews: NewsArticle[] = [
-  {
-    id: 1,
-    title: "SET Index ปิดพุ่ง 2.1% หลังธนาชาติไทยเปลี่ยนแปลงอัตราดอกเบี้ย",
-    excerpt: "ตลาดหุ้นไทยปิดบวกแรงหลังจากธนาคารแห่งประเทศไทยประกาศปรับลดอัตราดอกเบี้ยนโยบาย ส่งผลให้นักลงทุนมองบวกต่อหุ้นกลุ่มธนาคารและอสังหาริมทรัพย์",
-    author: "วิทยา วิเคราะห์",
-    date: "27 ส.ค. 2567",
-    readTime: "5 นาที",
-    category: "ตลาดหุ้น",
-    imageUrl: "/api/placeholder/600/300",
-    views: 15420,
-    trending: 'up'
-  },
-  {
-    id: 2,
-    title: "การลงทุนใน AI และ Tech Stocks: โอกาสและความเสี่ยงในปี 2025",
-    excerpt: "วิเคราะห์แนวโน้มการลงทุนในหุ้นเทคโนโลยีและปัญญาประดิษฐ์ที่น่าจับตามองในช่วงครึ่งหลังของปี พร้อมเทคนิคการเลือกหุ้นที่มีศักยภาพ",
-    author: "ดร.สมชาย ลงทุน",
-    date: "26 ส.ค. 2567",
-    readTime: "8 นาที",
-    category: "การลงทุน",
-    imageUrl: "/api/placeholder/600/300",
-    views: 8930,
-    trending: 'up'
-  },
-  {
-    id: 3,
-    title: "หุ้น Energy ร่วงหนัก หลังราคาน้ำมันดิบปรับตัวลง 5%",
-    excerpt: "หุ้นกลุ่มพลังงานในตลาดไทยปรับตัวลงตามราคาน้ำมันโลก นักวิเคราะห์แนะให้รอจังหวะที่เหมาะสมก่อนเข้าลงทุน",
-    author: "รัตนา การเงิน",
-    date: "25 ส.ค. 2567",
-    readTime: "4 นาที",
-    category: "พลังงาน",
-    imageUrl: "/api/placeholder/600/300",
-    views: 6750,
-    trending: 'down'
-  },
-  {
-    id: 4,
-    title: "5 หุ้นเด่นน่าลงทุนระยะยาวสำหรับผู้เริ่มต้น",
-    excerpt: "แนะนำหุ้นคุณภาพที่เหมาะสำหรับนักลงทุนมือใหม่ พร้อมกลยุทธ์การลงทุนแบบ Dollar Cost Averaging ที่ช่วยลดความเสี่ยง",
-    author: "ประยุทธ์ หุ้นดี",
-    date: "24 ส.ค. 2567",
-    readTime: "6 นาที",
-    category: "การลงทุน",
-    imageUrl: "/api/placeholder/600/300",
-    views: 12340,
-    trending: null
-  },
-  {
-    id: 5,
-    title: "การวิเคราะห์หุ้นด้วย Technical Analysis: คู่มือฉบับสมบูรณ์",
-    excerpt: "เรียนรู้เทคนิคการวิเคราะห์ทางเทคนิคแบบเข้าใจง่าย ตั้งแต่การอ่านแผนภูมิ การใช้ indicator ต่างๆ จนถึงการหาจังหวะเข้าซื้อขาย",
-    author: "อาจารย์วิชัย เทรดเดอร์",
-    date: "23 ส.ค. 2567",
-    readTime: "12 นาที",
-    category: "เทคนิค",
-    imageUrl: "/api/placeholder/600/300",
-    views: 9876,
-    trending: null
-  },
-  {
-    id: 6,
-    title: "แนวโน้มตลาดทองคำ: ยังคงเป็นสินทรัพย์ปลอดภัยหรือไม่?",
-    excerpt: "วิเคราะห์ปัจจัยที่ส่งผลต่อราคาทองคำในปัจจุบัน และประเมินความเหมาะสมของการลงทุนในทองคำเป็นส่วนหนึ่งของ portfolio",
-    author: "สุดา โกลด์",
-    date: "22 ส.ค. 2567",
-    readTime: "7 นาที",
-    category: "สินค้าโภคภัณฑ์",
-    imageUrl: "/api/placeholder/600/300",
-    views: 5432,
-    trending: 'up'
-  }
+interface APINewsArticle {
+  id: string;
+  title: string;
+  description: string;
+  publishedAt: string;
+  url: string;
+  estimatedReadTime: number;
+  source: string;
+}
+
+interface NewsResponse {
+  current_page: number;
+  data: APINewsArticle[];
+  pages: number;
+  per_page: number;
+  total: number;
+}
+
+const categories = [
+  "ทั้งหมด",
+  "ตลาดหุ้น",
+  "การลงทุน",
+  "พลังงาน",
+  "เทคนิค",
+  "สินค้าโภคภัณฑ์",
 ];
 
-const categories = ["ทั้งหมด", "ตลาดหุ้น", "การลงทุน", "พลังงาน", "เทคนิค", "สินค้าโภคภัณฑ์"];
-
 export default function NewsPage() {
-  const [selectedCategory, setSelectedCategory] = React.useState("ทั้งหมด");
-  const [filteredNews, setFilteredNews] = React.useState(mockNews);
+  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
+  const [news, setNews] = useState<APINewsArticle[]>([]);
+  const [featuredArticle, setFeaturedArticle] = useState<AINewsArticle | null>(
+    null
+  );
 
-  React.useEffect(() => {
-    if (selectedCategory === "ทั้งหมด") {
-      setFilteredNews(mockNews);
-    } else {
-      setFilteredNews(mockNews.filter(article => article.category === selectedCategory));
-    }
-  }, [selectedCategory]);
+  const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
+  const [featuredLoading, setFeaturedLoading] = useState(true);
 
-  const formatViews = (views: number) => {
-    if (views >= 1000) {
-      return `${(views / 1000).toFixed(1)}k`;
+  const [error, setError] = useState<string | null>(null);
+  const [featuredError, setFeaturedError] = useState<string | null>(null);
+
+  const [currentPage, setCurrentPage] = useState(1);
+  const [totalPages, setTotalPages] = useState(0);
+  const [hasMoreNews, setHasMoreNews] = useState(true);
+
+  const fetchFeaturedArticle = async () => {
+    try {
+      setFeaturedLoading(true);
+      setFeaturedError(null);
+
+      const response = await axios.post<AINewsArticle>(
+        "http://localhost:3002/news/ai"
+      );
+
+      if (!response.data.content) {
+        throw new Error("ไม่พบเนื้อหาบทความ");
+      }
+
+      setFeaturedArticle(response.data);
+    } catch (err) {
+      console.error("Error fetching featured article:", err);
+      setFeaturedError(
+        err instanceof Error ? err.message : "ไม่สามารถโหลดบทความเด่นได้"
+      );
+    } finally {
+      setFeaturedLoading(false);
     }
-    return views.toString();
+  };
+
+  const fetchNews = async (page: number = 1, append: boolean = false) => {
+    try {
+      if (page === 1) {
+        setLoading(true);
+      } else {
+        setLoadingMore(true);
+      }
+
+      setError(null);
+
+      const response = await axios.get<NewsResponse>(
+        `http://localhost:3002/news/?page=${page}&per_page=10`
+      );
+
+      const newsData = response.data;
+
+      if (append) {
+        setNews((prevNews) => [...prevNews, ...newsData.data]);
+      } else {
+        setNews(newsData.data);
+      }
+
+      setCurrentPage(newsData.current_page);
+      setTotalPages(newsData.pages);
+      setHasMoreNews(newsData.current_page < newsData.pages);
+    } catch (err) {
+      console.error("Error fetching news:", err);
+      setError(err instanceof Error ? err.message : "An error occurred");
+    } finally {
+      setLoading(false);
+      setLoadingMore(false);
+    }
+  };
+
+  useEffect(() => {
+    fetchNews(1, false);
+    fetchFeaturedArticle();
+  }, []);
+
+  const loadMoreNews = async () => {
+    if (!hasMoreNews || loadingMore) return;
+
+    const nextPage = currentPage + 1;
+    await fetchNews(nextPage, true);
+  };
+
+  const handleArticleClick = (url: string) => {
+    window.open(url, "_blank");
+  };
+
+  const handleCategoryChange = (category: string) => {
+    setSelectedCategory(category);
+    setCurrentPage(1);
+    setNews([]);
+    fetchNews(1, false);
+  };
+
+  const formatDate = (dateString: string) => {
+    const date = new Date(dateString);
+    return date.toLocaleDateString("th-TH", {
+      day: "numeric",
+      month: "short",
+      year: "numeric",
+    });
+  };
+
+  const FeaturedArticleComponent = () => {
+    if (featuredLoading) {
+      return (
+        <div className="bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-700">
+          <div className="p-8 space-y-6 animate-pulse">
+            {/* Title Skeleton */}
+            <div className="h-6 bg-gray-700 rounded w-full mx-auto"></div>
+            <div className="h-4 bg-gray-700 rounded w-full mx-auto"></div>
+            <div className="h-4 bg-gray-700 rounded w-full mx-auto"></div>
+            <div className="h-4 bg-gray-700 rounded w-full mx-auto"></div>
+            <div className="h-4 bg-gray-700 rounded w-full mx-auto"></div>
+          </div>
+        </div>
+      );
+    }
+
+    if (!featuredArticle) return null;
+
+    const paragraphs = featuredArticle.content
+      .split("\n")
+      .filter((p) => p.trim() !== "");
+
+    return (
+      <div className="bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-700">
+        <div className="p-8">
+          <div className="flex items-center mb-4">
+            <span className="bg-red-600 text-red-100 text-xs font-medium px-2.5 py-0.5 rounded">
+              บทวิเคราะห์ AI
+            </span>
+          </div>
+          <h2 className="text-2xl font-bold text-white mb-4 line-clamp-2">
+            {featuredArticle.title}
+          </h2>
+
+          <div className="space-y-4 text-gray-300">
+            {paragraphs.map((paragraph, index) => (
+              <p
+                key={index}
+                className={index === paragraphs.length - 1 ? "italic" : ""}
+              >
+                {paragraph}
+              </p>
+            ))}
+          </div>
+
+          <div className="mt-6 flex justify-between items-center">
+            <span className="text-sm text-gray-400">
+              วิเคราะห์โดย AI Assistant (บทความที่ให้มาเป็นการสรุปมาจาก AI
+              กรุณาใช้วิจารณญาณในการอ่าน)
+            </span>
+            {featuredArticle.link && (
+              <button
+                className="bg-blue-600 text-white px-4 py-2 rounded-lg text-sm hover:bg-blue-700 transition-colors"
+                onClick={(e) => {
+                  e.stopPropagation();
+                  window.open(
+                    featuredArticle.link,
+                    "_blank",
+                    "noopener,noreferrer"
+                  );
+                }}
+              >
+                อ่านเพิ่มเติม
+              </button>
+            )}
+          </div>
+        </div>
+      </div>
+    );
   };
 
   return (
@@ -116,7 +223,9 @@ export default function NewsPage() {
       <div className="">
         <div className="max-w-6xl mx-auto px-4 py-8">
           <h1 className="text-4xl font-bold text-white mb-4">ข่าวการลงทุน</h1>
-          <p className="text-xl text-gray-300">ติดตามข่าวสารและบทวิเคราะห์ล่าสุดเกี่ยวกับตลาดหุ้นและการลงทุน</p>
+          <p className="text-xl text-gray-300">
+            ติดตามข่าวสารและบทวิเคราะห์ล่าสุดเกี่ยวกับตลาดหุ้นและการลงทุน
+          </p>
         </div>
       </div>
 
@@ -127,11 +236,11 @@ export default function NewsPage() {
             {categories.map((category) => (
               <button
                 key={category}
-                onClick={() => setSelectedCategory(category)}
+                onClick={() => handleCategoryChange(category)}
                 className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
                   selectedCategory === category
-                    ? 'bg-blue-600 text-white'
-                    : 'bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600'
+                    ? "bg-blue-600 text-white"
+                    : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
                 }`}
               >
                 {category}
@@ -140,126 +249,100 @@ export default function NewsPage() {
           </div>
         </div>
 
-        {/* Featured Article */}
+        {/* Featured Article Section */}
         <div className="mb-12">
-          <div className="bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-700">
-            <div className="md:flex">
-              <div className="md:w-1/2">
-                <img 
-                  src={filteredNews[0]?.imageUrl} 
-                  alt={filteredNews[0]?.title}
-                  className="w-full h-64 md:h-full object-cover"
-                />
-              </div>
-              <div className="md:w-1/2 p-8">
-                <div className="flex items-center mb-4">
-                  <span className="bg-red-600 text-red-100 text-xs font-medium px-2.5 py-0.5 rounded">
-                    เด่นวันนี้
-                  </span>
-                  {filteredNews[0]?.trending && (
-                    <span className="ml-2">
-                      {filteredNews[0].trending === 'up' ? (
-                        <TrendingUp className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-400" />
-                      )}
-                    </span>
-                  )}
-                </div>
-                <h2 className="text-2xl font-bold text-white mb-4 line-clamp-2">
-                  {filteredNews[0]?.title}
-                </h2>
-                <p className="text-gray-300 mb-4 line-clamp-3">
-                  {filteredNews[0]?.excerpt}
-                </p>
-                <div className="flex items-center justify-between text-sm text-gray-400">
-                  <div className="flex items-center space-x-4">
-                    <div className="flex items-center">
-                      <User className="w-4 h-4 mr-1" />
-                      {filteredNews[0]?.author}
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="w-4 h-4 mr-1" />
-                      {filteredNews[0]?.date}
-                    </div>
-                    <div className="flex items-center">
-                      <Clock className="w-4 h-4 mr-1" />
-                      {filteredNews[0]?.readTime}
-                    </div>
-                  </div>
-                  <div className="flex items-center">
-                    <Eye className="w-4 h-4 mr-1" />
-                    {formatViews(filteredNews[0]?.views || 0)}
-                  </div>
-                </div>
-              </div>
-            </div>
-          </div>
+          <FeaturedArticleComponent />
         </div>
+
+        {/* Loading State */}
+        {loading && (
+          <div className="text-center py-8">
+            <div className="text-white">กำลังโหลด...</div>
+          </div>
+        )}
+
+        {/* Error State */}
+        {error && (
+          <div className="text-center py-8">
+            <div className="text-red-500">Error: {error}</div>
+            <button
+              onClick={() => fetchNews(1, false)}
+              className="mt-4 bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              ลองใหม่
+            </button>
+          </div>
+        )}
 
         {/* News Grid */}
-        <div className="grid md:grid-cols-2 lg:grid-cols-3 gap-6">
-          {filteredNews.slice(1).map((article) => (
-            <article key={article.id} className="bg-gray-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-700 hover:border-gray-600">
-              <img 
-                src={article.imageUrl} 
-                alt={article.title}
-                className="w-full h-48 object-cover"
-              />
-              <div className="p-6">
-                <div className="flex items-center justify-between mb-3">
-                  <span className="bg-blue-600 text-blue-100 text-xs font-medium px-2.5 py-0.5 rounded">
-                    {article.category}
-                  </span>
-                  {article.trending && (
-                    <span>
-                      {article.trending === 'up' ? (
-                        <TrendingUp className="w-4 h-4 text-green-400" />
-                      ) : (
-                        <TrendingDown className="w-4 h-4 text-red-400" />
-                      )}
+        {!loading && !error && (
+          <div className="grid md:grid-cols-2 gap-6">
+            {news.map((article) => (
+              <article
+                key={article.id}
+                className="bg-gray-800 rounded-lg shadow-sm overflow-hidden hover:shadow-md transition-shadow cursor-pointer border border-gray-700 hover:border-gray-600"
+                onClick={() => handleArticleClick(article.url)}
+              >
+                <div className="p-6">
+                  <div className="flex items-center justify-between mb-3">
+                    <span className="bg-blue-600 text-blue-100 text-xs font-medium px-2.5 py-0.5 rounded">
+                      {article.source}
                     </span>
-                  )}
-                </div>
-                <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
-                  {article.title}
-                </h3>
-                <p className="text-gray-300 text-sm mb-4 line-clamp-3">
-                  {article.excerpt}
-                </p>
-                <div className="flex items-center justify-between text-xs text-gray-400">
-                  <div className="flex items-center space-x-3">
-                    <div className="flex items-center">
-                      <User className="w-3 h-3 mr-1" />
-                      {article.author}
-                    </div>
-                    <div className="flex items-center">
-                      <Calendar className="w-3 h-3 mr-1" />
-                      {article.date}
-                    </div>
                   </div>
-                  <div className="flex items-center space-x-3">
+                  <h3 className="text-lg font-semibold text-white mb-2 line-clamp-2">
+                    {article.title}
+                  </h3>
+                  <p className="text-gray-300 text-sm mb-4 line-clamp-3">
+                    {article.description}
+                  </p>
+                  <div className="flex items-center justify-between text-xs text-gray-400">
+                    <div className="flex items-center space-x-3">
+                      <div className="flex items-center">
+                        <Calendar className="w-3 h-3 mr-1" />
+                        {formatDate(article.publishedAt)}
+                      </div>
+                    </div>
                     <div className="flex items-center">
                       <Clock className="w-3 h-3 mr-1" />
-                      {article.readTime}
-                    </div>
-                    <div className="flex items-center">
-                      <Eye className="w-3 h-3 mr-1" />
-                      {formatViews(article.views)}
+                      {article.estimatedReadTime} นาที
                     </div>
                   </div>
                 </div>
-              </div>
-            </article>
-          ))}
-        </div>
+              </article>
+            ))}
+          </div>
+        )}
 
         {/* Load More Button */}
-        <div className="text-center mt-12">
-          <button className="bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors">
-            โหลดข่าวเพิ่มเติม
-          </button>
-        </div>
+        {!loading && !error && hasMoreNews && (
+          <div className="text-center mt-12">
+            <button
+              className={`bg-blue-600 text-white px-8 py-3 rounded-lg font-medium hover:bg-blue-700 transition-colors ${
+                loadingMore ? "opacity-50 cursor-not-allowed" : ""
+              }`}
+              onClick={loadMoreNews}
+              disabled={loadingMore}
+            >
+              {loadingMore ? "กำลังโหลด..." : "โหลดข่าวเพิ่มเติม"}
+            </button>
+          </div>
+        )}
+
+        {/* No more news message */}
+        {!loading && !error && !hasMoreNews && news.length > 0 && (
+          <div className="text-center mt-12">
+            <p className="text-gray-400">ไม่มีข่าวเพิ่มเติมแล้ว</p>
+          </div>
+        )}
+
+        {/* Pagination info */}
+        {!loading && !error && news.length > 0 && (
+          <div className="text-center mt-8">
+            <p className="text-gray-400 text-sm">
+              หน้า {currentPage} จาก {totalPages} ({news.length} ข่าว)
+            </p>
+          </div>
+        )}
       </div>
     </div>
   );
