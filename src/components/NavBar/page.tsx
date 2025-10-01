@@ -28,12 +28,21 @@ const NavBar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <div className="flex items-center">
-            <button
-              onClick={() => handleNavigation("/")}
-              className="text-xl font-bold text-white"
-            >
-              Finance Pro
-            </button>
+            {isLogin ? (
+              <button
+                onClick={() => handleNavigation("/news")}
+                className="text-xl font-bold text-white"
+              >
+                Finance Pro
+              </button>
+            ) : (
+              <button
+                onClick={() => handleNavigation("/")}
+                className="text-xl font-bold text-white"
+              >
+                Finance Pro
+              </button>
+            )}
           </div>
 
           {/* Desktop Menu */}

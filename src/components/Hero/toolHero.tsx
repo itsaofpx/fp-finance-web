@@ -40,13 +40,6 @@ export default function ToolListHero() {
       category: "การวางแผน",
     },
     {
-      title: "ออมเท่าไหร่ถึงได้เป้าหมายตามกำหนด",
-      description: "คำนวณจำนวนเงินที่ต้องออมเพื่อให้ถึงเป้าหมาย",
-      path: "tool/savings-goal",
-      icon: "🏆",
-      category: "การวางแผน",
-    },
-    {
       title: "คำนวณดอกเบี้ยทบต้น",
       description: "คำนวณการเติบโตของเงินด้วยดอกเบี้ยทบต้น",
       path: "tool/compound-interest",
@@ -54,8 +47,8 @@ export default function ToolListHero() {
       category: "การคำนวณ",
     },
     {
-      title: "คำนวณเงินปันผล",
-      description: "คำนวณผลตอบแทนจากเงินปันผลรายปี",
+      title: "คำนวณเป้าหมายเงินปันผล",
+      description: "คำนวณจำนวนหุ้นที่ต้องซื้อเพื่อให้ได้เงินปันผลตามเป้าหมาย",
       path: "tool/dividend-calculator",
       icon: "💎",
       category: "การคำนวณ",
@@ -67,6 +60,20 @@ export default function ToolListHero() {
       icon: "🧾",
       category: "การคำนวณ",
     },
+    {
+      title: "คำนวณ Stop Loss & Take Profit",
+      description: "กำหนดจุดตัดขาดทุนและเก็บกำไรอย่างมีระบบ",
+      path: "tool/stop-loss",
+      icon: "🛡️",
+      category: "การจัดการความเสี่ยง",
+    },
+    {
+      title: "คำนวณ Emergency Fund",
+      description: "คำนวณเงินสำรองฉุกเฉินที่เหมาะสมกับรายได้",
+      path: "tool/emergency-fund",
+      icon: "🆘",
+      category: "การวางแผน",
+    },
   ];
 
   const categories = [
@@ -75,6 +82,7 @@ export default function ToolListHero() {
     "การจัดสรร",
     "การคำนวณ",
     "การวางแผน",
+    "การจัดการความเสี่ยง",
   ];
   const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
 
@@ -97,11 +105,12 @@ export default function ToolListHero() {
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
               เครื่องมือการลงทุน
               <span className="block text-gray-400 text-3xl md:text-4xl font-normal mt-2">
-                สำหรับบุคคลทั่วไป
+                สำหรับนักลงทุนทุกระดับ
               </span>
             </h1>
             <p className="text-xl text-gray-300 max-w-3xl mx-auto leading-relaxed">
-              เครื่องมือครบครันสำหรับการคำนวณ และวางแผนการลงทุนอย่างมืออาชีพ
+              เครื่องมือครบครันสำหรับการคำนวณ วิเคราะห์
+              และวางแผนการลงทุนอย่างมืออาชีพ
             </p>
           </div>
 

@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import React from "react";
 import axios from "axios";
 import { Calendar, Clock } from "lucide-react";
+import ReactMarkdown from "react-markdown";
 
 interface AINewsArticle {
   title: string;
@@ -29,17 +30,7 @@ interface NewsResponse {
   total: number;
 }
 
-const categories = [
-  "ทั้งหมด",
-  "ตลาดหุ้น",
-  "การลงทุน",
-  "พลังงาน",
-  "เทคนิค",
-  "สินค้าโภคภัณฑ์",
-];
-
 export default function NewsPage() {
-  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
   const [news, setNews] = useState<APINewsArticle[]>([]);
   const [featuredArticle, setFeaturedArticle] = useState<AINewsArticle | null>(
     null
@@ -61,8 +52,8 @@ export default function NewsPage() {
       setFeaturedLoading(true);
       setFeaturedError(null);
 
-      const response = await axios.post<AINewsArticle>(
-        "http://localhost:3002/news/ai"
+      const response = await axios.get<AINewsArticle>(
+        "http://localhost:3002/news/prompt/latest"
       );
 
       if (!response.data.content) {
@@ -130,13 +121,6 @@ export default function NewsPage() {
     window.open(url, "_blank");
   };
 
-  const handleCategoryChange = (category: string) => {
-    setSelectedCategory(category);
-    setCurrentPage(1);
-    setNews([]);
-    fetchNews(1, false);
-  };
-
   const formatDate = (dateString: string) => {
     const date = new Date(dateString);
     return date.toLocaleDateString("th-TH", {
@@ -162,11 +146,24 @@ export default function NewsPage() {
       );
     }
 
-    if (!featuredArticle) return null;
+    if (featuredError) {
+      return (
+        <div className="bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-700">
+          <div className="p-8 text-center">
+            <div className="text-red-400 mb-4">เกิดข้อผิดพลาด</div>
+            <p className="text-gray-300 mb-4">{featuredError}</p>
+            <button
+              onClick={fetchFeaturedArticle}
+              className="bg-blue-600 text-white px-4 py-2 rounded-lg hover:bg-blue-700 transition-colors"
+            >
+              ลองใหม่
+            </button>
+          </div>
+        </div>
+      );
+    }
 
-    const paragraphs = featuredArticle.content
-      .split("\n")
-      .filter((p) => p.trim() !== "");
+    if (!featuredArticle) return null;
 
     return (
       <div className="bg-gray-800 rounded-lg shadow-sm overflow-hidden border border-gray-700">
@@ -180,15 +177,150 @@ export default function NewsPage() {
             {featuredArticle.title}
           </h2>
 
-          <div className="space-y-4 text-gray-300">
-            {paragraphs.map((paragraph, index) => (
-              <p
-                key={index}
-                className={index === paragraphs.length - 1 ? "italic" : ""}
-              >
-                {paragraph}
-              </p>
-            ))}
+          {/* Markdown Content */}
+          <div className="prose prose-invert max-w-none">
+            <ReactMarkdown
+              components={{
+                // Headings
+                h1: ({ children }) => (
+                  <h1 className="text-2xl font-bold mb-4 text-white border-b border-gray-600 pb-2">
+                    {children}
+                  </h1>
+                ),
+                h2: ({ children }) => (
+                  <h2 className="text-xl font-semibold mb-3 text-white mt-6">
+                    {children}
+                  </h2>
+                ),
+                h3: ({ children }) => (
+                  <h3 className="text-lg font-medium mb-2 text-white mt-4">
+                    {children}
+                  </h3>
+                ),
+                h4: ({ children }) => (
+                  <h4 className="text-base font-medium mb-2 text-white mt-3">
+                    {children}
+                  </h4>
+                ),
+                h5: ({ children }) => (
+                  <h5 className="text-sm font-medium mb-2 text-white mt-3">
+                    {children}
+                  </h5>
+                ),
+                h6: ({ children }) => (
+                  <h6 className="text-xs font-medium mb-2 text-white mt-3">
+                    {children}
+                  </h6>
+                ),
+
+                // Paragraphs
+                p: ({ children }) => (
+                  <p className="mb-4 leading-relaxed text-gray-300">
+                    {children}
+                  </p>
+                ),
+
+                // Lists
+                ul: ({ children }) => (
+                  <ul className="list-disc list-inside mb-4 space-y-2 ml-4">
+                    {children}
+                  </ul>
+                ),
+                ol: ({ children }) => (
+                  <ol className="list-decimal list-inside mb-4 space-y-2 ml-4">
+                    {children}
+                  </ol>
+                ),
+                li: ({ children }) => (
+                  <li className="text-gray-300 leading-relaxed">{children}</li>
+                ),
+
+                // Text formatting
+                strong: ({ children }) => (
+                  <strong className="font-semibold text-white">
+                    {children}
+                  </strong>
+                ),
+                em: ({ children }) => (
+                  <em className="italic text-gray-200">{children}</em>
+                ),
+
+                // Blockquotes
+                blockquote: ({ children }) => (
+                  <blockquote className="border-l-4 border-blue-500 pl-4 italic text-gray-200 my-4 bg-gray-700/30 py-2 rounded-r">
+                    {children}
+                  </blockquote>
+                ),
+
+                // Code
+                code: ({ children }) => (
+                  <code className="bg-gray-700 px-2 py-1 rounded text-sm font-mono text-yellow-300">
+                    {children}
+                  </code>
+                ),
+
+                // Code blocks
+                pre: ({ children }) => (
+                  <pre className="bg-gray-700 p-4 rounded-lg overflow-x-auto mb-4">
+                    <code className="text-gray-200 text-sm font-mono">
+                      {children}
+                    </code>
+                  </pre>
+                ),
+
+                // Links
+                a: ({ href, children }) => (
+                  <a
+                    href={href}
+                    className="text-blue-400 hover:text-blue-300 underline transition-colors"
+                    target="_blank"
+                    rel="noopener noreferrer"
+                  >
+                    {children}
+                  </a>
+                ),
+
+                // Horizontal rule
+                hr: () => <hr className="border-gray-600 my-6" />,
+
+                // Tables
+                table: ({ children }) => (
+                  <div className="overflow-x-auto mb-4">
+                    <table className="min-w-full border border-gray-600 rounded-lg">
+                      {children}
+                    </table>
+                  </div>
+                ),
+                thead: ({ children }) => (
+                  <thead className="bg-gray-700">{children}</thead>
+                ),
+                tbody: ({ children }) => (
+                  <tbody className="bg-gray-800">{children}</tbody>
+                ),
+                tr: ({ children }) => (
+                  <tr className="border-b border-gray-600">{children}</tr>
+                ),
+                th: ({ children }) => (
+                  <th className="px-4 py-2 text-left text-white font-semibold">
+                    {children}
+                  </th>
+                ),
+                td: ({ children }) => (
+                  <td className="px-4 py-2 text-gray-300">{children}</td>
+                ),
+
+                // Images
+                img: ({ src, alt }) => (
+                  <img
+                    src={src}
+                    alt={alt}
+                    className="max-w-full h-auto rounded-lg mb-4"
+                  />
+                ),
+              }}
+            >
+              {featuredArticle.content}
+            </ReactMarkdown>
           </div>
 
           <div className="mt-6 flex justify-between items-center">
@@ -230,25 +362,6 @@ export default function NewsPage() {
       </div>
 
       <div className="max-w-6xl mx-auto px-4 py-8">
-        {/* Category Filter */}
-        <div className="mb-8">
-          <div className="flex flex-wrap gap-2">
-            {categories.map((category) => (
-              <button
-                key={category}
-                onClick={() => handleCategoryChange(category)}
-                className={`px-4 py-2 rounded-full text-sm font-medium transition-colors ${
-                  selectedCategory === category
-                    ? "bg-blue-600 text-white"
-                    : "bg-gray-800 text-gray-300 hover:bg-gray-700 border border-gray-600"
-                }`}
-              >
-                {category}
-              </button>
-            ))}
-          </div>
-        </div>
-
         {/* Featured Article Section */}
         <div className="mb-12">
           <FeaturedArticleComponent />
