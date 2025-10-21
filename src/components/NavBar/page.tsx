@@ -60,10 +60,10 @@ const NavBar = () => {
               ราคา
             </button>
             <button
-              onClick={() => handleNavigation("about")}
+              onClick={() => handleNavigation("plan")}
               className="text-gray-300 hover:text-white transition-all duration-300 hover:scale-105"
             >
-              เกี่ยวกับเรา
+              แผน
             </button>
             {isLogin && (
               <button
