@@ -3,16 +3,16 @@
 import { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { parseCookies } from "nookies";
-import { 
-  Snackbar, 
-  Alert, 
-  Dialog, 
-  DialogTitle, 
-  DialogContent, 
-  DialogActions, 
-  Button, 
-  DialogContentText 
-} from '@mui/material';
+import {
+  Snackbar,
+  Alert,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  Button,
+  DialogContentText,
+} from "@mui/material";
 import axios from "axios";
 import {
   AreaChart,
@@ -49,7 +49,7 @@ export default function PlanPage() {
   const router = useRouter();
   const [currentAge, setCurrentAge] = useState<number>(25);
   const [retirementAge, setRetirementAge] = useState<number>(60);
-  const [monthlyExpenses, setMonthlyExpenses] = useState<number>(30000);
+  const [monthlyExpenses, setMonthlyExpenses] = useState<number>(0);
   const [currentSavings, setCurrentSavings] = useState<number>(0);
   const [expectedReturn, setExpectedReturn] = useState<number>(7);
   const [inflationRate, setInflationRate] = useState<number>(3);
@@ -60,36 +60,36 @@ export default function PlanPage() {
   const [loading, setLoading] = useState<boolean>(false);
   const [snackbar, setSnackbar] = useState({
     open: false,
-    message: '',
-    severity: 'success' as 'success' | 'error' | 'warning' | 'info'
+    message: "",
+    severity: "success" as "success" | "error" | "warning" | "info",
   });
   const [confirmDialog, setConfirmDialog] = useState({
     open: false,
-    title: '',
-    message: '',
-    onConfirm: () => {}
+    title: "",
+    message: "",
+    onConfirm: () => {},
   });
 
-  // ฟังก์ชันสำหรับเรียก API
   const fetchPlansFromDatabase = async (accountId: string, token: string) => {
     try {
       setLoading(true);
-      const response = await axios.get(`http://localhost:3001/plans/account/${accountId}`, {
-        headers: {
-          'Authorization': `Bearer ${token}`,
-          'Content-Type': 'application/json',
-        },
-      });
-
+      const response = await axios.get(
+        `http://localhost:3001/plans/account/${accountId}`,
+        {
+          headers: {
+            Authorization: `Bearer ${token}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
       setSavedPlans(response.data);
     } catch (error) {
-      console.error('Error fetching plans:', error);
+      console.error("Error fetching plans:", error);
     } finally {
       setLoading(false);
     }
   };
 
-  // ฟังก์ชันจัดการ input number ที่สามารถลบเป็นช่องว่างได้
   const handleNumberInput = (value: string, setter: (val: number) => void) => {
     if (value === "") {
       setter(0);
@@ -101,21 +101,17 @@ export default function PlanPage() {
     }
   };
 
-  // โหลดแผนที่บันทึกไว้จาก database
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Parse cookies with error handling
         const cookies = parseCookies();
         const accessToken = cookies.accessToken;
         const accountCookie = cookies.account;
 
-        // Validate tokens
         if (!accessToken) {
           throw new Error("Authentication token is missing");
         }
 
-        // Safely parse account cookie
         let accountData: { id?: string } = {};
         try {
           accountData = accountCookie ? JSON.parse(accountCookie) : {};
@@ -124,32 +120,26 @@ export default function PlanPage() {
           throw new Error("Invalid account information");
         }
 
-        // Validate Google ID
         const id = accountData.id;
         if (!id) {
           throw new Error("Google ID is missing");
         }
         setId(id);
-        console.log(accountData);
-
-        // โหลดแผนจาก database
         await fetchPlansFromDatabase(id, accessToken);
       } catch (error) {
         router.push("/");
-      } finally {
       }
     };
 
     fetchUserProfile();
   }, []);
 
-  // บันทึกแผนลง database
   const savePlan = async () => {
     if (!planName.trim()) {
       setSnackbar({
         open: true,
-        message: 'กรุณาใส่ชื่อแผน',
-        severity: 'error'
+        message: "กรุณาใส่ชื่อแผน",
+        severity: "error",
       });
       return;
     }
@@ -157,8 +147,8 @@ export default function PlanPage() {
     if (!id) {
       setSnackbar({
         open: true,
-        message: 'ไม่สามารถระบุตัวตนผู้ใช้ได้',
-        severity: 'error'
+        message: "ไม่สามารถระบุตัวตนผู้ใช้ได้",
+        severity: "error",
       });
       return;
     }
@@ -170,10 +160,10 @@ export default function PlanPage() {
 
       if (!accessToken) {
         setSnackbar({
-        open: true,
-        message: 'กรุณาเข้าสู่ระบบใหม่',
-        severity: 'error'
-      });
+          open: true,
+          message: "กรุณาเข้าสู่ระบบใหม่",
+          severity: "error",
+        });
         return;
       }
 
@@ -189,36 +179,37 @@ export default function PlanPage() {
         retirementYears,
       };
 
-      const response = await axios.post('http://localhost:3001/plans', newPlan, {
-        headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
-        },
-      });
+      const response = await axios.post(
+        "http://localhost:3001/plans",
+        newPlan,
+        {
+          headers: {
+            Authorization: `Bearer ${accessToken}`,
+            "Content-Type": "application/json",
+          },
+        }
+      );
 
       const savedPlan = response.data;
-      
-      // อัปเดต state ด้วยแผนที่บันทึกแล้ว
-      setSavedPlans(prevPlans => [...prevPlans, savedPlan]);
+      setSavedPlans((prevPlans) => [...prevPlans, savedPlan]);
       setPlanName("");
       setSnackbar({
         open: true,
-        message: 'บันทึกแผนสำเร็จ!',
-        severity: 'success'
+        message: "บันทึกแผนสำเร็จ!",
+        severity: "success",
       });
     } catch (error) {
-      console.error('Error saving plan:', error);
+      console.error("Error saving plan:", error);
       setSnackbar({
         open: true,
-        message: 'เกิดข้อผิดพลาดในการบันทึกแผน',
-        severity: 'error'
+        message: "เกิดข้อผิดพลาดในการบันทึกแผน",
+        severity: "error",
       });
     } finally {
       setLoading(false);
     }
   };
 
-  // โหลดแผนที่เลือก
   const loadPlan = (plan: RetirementPlan) => {
     setCurrentAge(plan.currentAge);
     setRetirementAge(plan.retirementAge);
@@ -230,13 +221,12 @@ export default function PlanPage() {
     setPlanName(plan.name);
   };
 
-  // ลบแผน
   const deletePlan = (planId: string) => {
     setConfirmDialog({
       open: true,
-      title: 'ยืนยันการลบแผน',
-      message: 'คุณต้องการลบแผนนี้หรือไม่? การกระทำนี้ไม่สามารถยกเลิกได้',
-      onConfirm: () => handleDeleteConfirm(planId)
+      title: "ยืนยันการลบแผน",
+      message: "คุณต้องการลบแผนนี้หรือไม่? การกระทำนี้ไม่สามารถยกเลิกได้",
+      onConfirm: () => handleDeleteConfirm(planId),
     });
   };
 
@@ -251,32 +241,33 @@ export default function PlanPage() {
       if (!accessToken) {
         setSnackbar({
           open: true,
-          message: 'กรุณาเข้าสู่ระบบใหม่',
-          severity: 'error'
+          message: "กรุณาเข้าสู่ระบบใหม่",
+          severity: "error",
         });
         return;
       }
 
       await axios.delete(`http://localhost:3001/plans/${planId}`, {
         headers: {
-          'Authorization': `Bearer ${accessToken}`,
-          'Content-Type': 'application/json',
+          Authorization: `Bearer ${accessToken}`,
+          "Content-Type": "application/json",
         },
       });
 
-      // อัปเดต state โดยลบแผนที่ถูกลบออก
-      setSavedPlans(prevPlans => prevPlans.filter(plan => plan.id !== planId));
+      setSavedPlans((prevPlans) =>
+        prevPlans.filter((plan) => plan.id !== planId)
+      );
       setSnackbar({
         open: true,
-        message: 'ลบแผนสำเร็จ!',
-        severity: 'success'
+        message: "ลบแผนสำเร็จ!",
+        severity: "success",
       });
     } catch (error) {
-      console.error('Error deleting plan:', error);
+      console.error("Error deleting plan:", error);
       setSnackbar({
         open: true,
-        message: 'เกิดข้อผิดพลาดในการลบแผน',
-        severity: 'error'
+        message: "เกิดข้อผิดพลาดในการลบแผน",
+        severity: "error",
       });
     } finally {
       setLoading(false);
@@ -287,11 +278,10 @@ export default function PlanPage() {
     setConfirmDialog({ ...confirmDialog, open: false });
   };
 
-  // สร้างแผนใหม่
   const createNewPlan = () => {
     setCurrentAge(25);
     setRetirementAge(60);
-    setMonthlyExpenses(30000);
+    setMonthlyExpenses(0);
     setCurrentSavings(0);
     setExpectedReturn(7);
     setInflationRate(3);
@@ -304,26 +294,20 @@ export default function PlanPage() {
     const realReturnRate = (expectedReturn - inflationRate) / 100;
     const monthlyRealReturn = realReturnRate / 12;
 
-    // คำนวณค่าใช้จ่ายรายเดือนในอนาคต (ปรับตามอัตราเงินเฟ้อ)
     const futureMonthlyExpenses =
       monthlyExpenses * Math.pow(1 + inflationRate / 100, yearsToRetirement);
 
-    // คำนวณเงินทั้งหมดที่ต้องใช้ในช่วงเกษียณ
     const totalRetirementNeeds = futureMonthlyExpenses * 12 * retirementYears;
 
-    // คำนวณมูลค่าปัจจุบันของเงินที่ต้องใช้ในอนาคต
     const presentValueOfRetirementNeeds =
       totalRetirementNeeds / Math.pow(1 + realReturnRate, retirementYears);
 
-    // คำนวณมูลค่าอนาคตของเงินออมปัจจุบัน
     const futureValueOfCurrentSavings =
       currentSavings * Math.pow(1 + expectedReturn / 100, yearsToRetirement);
 
-    // คำนวณเงินที่ต้องออมเพิ่ม
     const additionalSavingsNeeded =
       presentValueOfRetirementNeeds - futureValueOfCurrentSavings;
 
-    // คำนวณเงินออมรายเดือนที่ต้องการ
     const monthlyPayment =
       (additionalSavingsNeeded * monthlyRealReturn) /
       (Math.pow(1 + monthlyRealReturn, yearsToRetirement * 12) - 1);
@@ -345,7 +329,6 @@ export default function PlanPage() {
     return new Intl.NumberFormat("th-TH").format(num);
   };
 
-  // สร้างข้อมูลสำหรับกราฟการเติบโตของเงินออม
   const generateSavingsGrowthData = () => {
     const data = [];
     const yearsToRetirement = retirementAge - currentAge;
@@ -370,39 +353,37 @@ export default function PlanPage() {
     return data;
   };
 
-  // สร้างข้อมูลสำหรับกราฟ Pie Chart
   const generatePieChartData = () => {
     return [
       {
         name: "เงินออมปัจจุบัน",
         value: results.futureValueOfCurrentSavings,
-        color: "#3B82F6",
+        color: "#6B7FD7",
       },
       {
         name: "เงินออมเพิ่มเติม",
         value: results.additionalSavingsNeeded,
-        color: "#10B981",
+        color: "#7BC8A4",
       },
     ];
   };
 
-  // สร้างข้อมูลสำหรับกราฟแท่งเปรียบเทียบ
   const generateComparisonData = () => {
     return [
       {
         category: "เงินออมที่มี",
         amount: results.futureValueOfCurrentSavings,
-        color: "#3B82F6",
+        color: "#6B7FD7",
       },
       {
         category: "เงินที่ต้องออมเพิ่ม",
         amount: results.additionalSavingsNeeded,
-        color: "#F59E0B",
+        color: "#E8A87C",
       },
       {
         category: "เป้าหมายเกษียณ",
         amount: results.presentValueOfRetirementNeeds,
-        color: "#10B981",
+        color: "#7BC8A4",
       },
     ];
   };
@@ -412,471 +393,132 @@ export default function PlanPage() {
   };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="container mx-auto px-4 py-20">
-        <div className="max-w-7xl mx-auto">
-          <div className="text-center mb-8">
-            <h1 className="text-4xl font-bold text-gray-800 dark:text-white mb-4">
-              🏦 เครื่องคำนวณแผนเกษียณ
+    <div className="min-h-screen bg-gradient-to-br mt-16 from-gray-50 via-slate-50 to-gray-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800">
+      <div className="container mx-auto px-4 py-6">
+        {/* Page Title with New Plan Button */}
+        <div className="mb-6 flex items-center justify-between">
+          <div>
+            <h1 className="text-3xl font-bold text-gray-800 dark:text-gray-100 mb-1">
+              แผนการเกษียณ
             </h1>
-
-            {/* ปุ่มสร้างแผนใหม่ */}
-            <div className="flex justify-center mb-6">
-              <button
-                onClick={createNewPlan}
-                className="px-4 py-2 bg-green-500 text-white rounded-lg hover:bg-green-600 transition-colors"
-              >
-                ✨ สร้างแผนใหม่
-              </button>
-            </div>
+            <p className="text-sm text-gray-500 dark:text-gray-400">
+              วางแผนอนาคตที่มั่นคงด้วยเครื่องคำนวณแบบมืออาชีพ
+            </p>
           </div>
+          <button
+            onClick={createNewPlan}
+            className="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center gap-2"
+          >
+            <span>✨</span> สร้างแผนใหม่
+          </button>
+        </div>
 
-          <div className="grid grid-cols-1 lg:grid-cols-4 gap-8">
-            {/* Main Content - ฟอร์มและผลลัพธ์ */}
-            <div className="lg:col-span-3">
-              <div className="grid lg:grid-cols-2 gap-8">
-                {/* ฟอร์มการคำนวณ */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-white">
-                    ข้อมูลสำหรับการคำนวณ
-                  </h2>
-
-                  <div className="space-y-4">
-                    {/* ช่องชื่อแผน */}
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ชื่อแผน
-                      </label>
-                      <input
-                        type="text"
-                        value={planName}
-                        onChange={(e) => setPlanName(e.target.value)}
-                        placeholder="เช่น แผนเกษียณอายุ 60"
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        อายุปัจจุบัน (ปี)
-                      </label>
-                      <input
-                        type="number"
-                        value={currentAge === 0 ? "" : currentAge}
-                        onChange={(e) =>
-                          handleNumberInput(e.target.value, setCurrentAge)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="18"
-                        max="65"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        อายุที่ต้องการเกษียณ (ปี)
-                      </label>
-                      <input
-                        type="number"
-                        value={retirementAge === 0 ? "" : retirementAge}
-                        onChange={(e) =>
-                          handleNumberInput(e.target.value, setRetirementAge)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min={currentAge + 1}
-                        max="80"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ค่าใช้จ่ายรายเดือนปัจจุบัน (บาท)
-                      </label>
-                      <input
-                        type="number"
-                        value={monthlyExpenses === 0 ? "" : monthlyExpenses}
-                        onChange={(e) =>
-                          handleNumberInput(e.target.value, setMonthlyExpenses)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="1000"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        เงินออมปัจจุบัน (บาท)
-                      </label>
-                      <input
-                        type="number"
-                        value={currentSavings === 0 ? "" : currentSavings}
-                        onChange={(e) =>
-                          handleNumberInput(e.target.value, setCurrentSavings)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="0"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        ผลตอบแทนที่คาดหวัง (% ต่อปี)
-                      </label>
-                      <input
-                        type="number"
-                        value={expectedReturn === 0 ? "" : expectedReturn}
-                        onChange={(e) =>
-                          handleNumberInput(e.target.value, setExpectedReturn)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="1"
-                        max="20"
-                        step="0.1"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        อัตราเงินเฟ้อ (% ต่อปี)
-                      </label>
-                      <input
-                        type="number"
-                        value={inflationRate === 0 ? "" : inflationRate}
-                        onChange={(e) =>
-                          handleNumberInput(e.target.value, setInflationRate)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="0"
-                        max="10"
-                        step="0.1"
-                      />
-                    </div>
-
-                    <div>
-                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-2">
-                        จำนวนปีหลังเกษียณ
-                      </label>
-                      <input
-                        type="number"
-                        value={retirementYears === 0 ? "" : retirementYears}
-                        onChange={(e) =>
-                          handleNumberInput(e.target.value, setRetirementYears)
-                        }
-                        className="w-full px-3 py-2 border border-gray-300 rounded-lg focus:ring-2 focus:ring-blue-500 focus:border-transparent dark:bg-gray-700 dark:border-gray-600 dark:text-white"
-                        min="1"
-                        max="50"
-                      />
-                    </div>
-
-                    {/* ปุ่มบันทึกแผน */}
-                    <button
-                      onClick={savePlan}
-                      disabled={loading}
-                      className="w-full px-4 py-2 bg-purple-500 text-white rounded-lg hover:bg-purple-600 transition-colors disabled:bg-gray-400 disabled:cursor-not-allowed"
-                    >
-                      {loading ? "กำลังบันทึก..." : "บันทึกแผน"}
-                    </button>
-                  </div>
-                </div>
-
-                {/* ผลลัพธ์การคำนวณ */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h2 className="text-2xl font-semibold mb-6 text-gray-800 dark:text-white">
-                    ผลการคำนวณ
-                  </h2>
-
-                  <div className="space-y-4 mb-6">
-                    <div className="bg-blue-50 dark:bg-blue-900/20 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        ปีที่เหลือก่อนเกษียณ
-                      </div>
-                      <div className="text-2xl font-bold text-blue-600 dark:text-blue-400">
-                        {results.yearsToRetirement} ปี
-                      </div>
-                    </div>
-
-                    <div className="bg-green-50 dark:bg-green-900/20 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        เงินออมรายเดือนที่ต้องการ
-                      </div>
-                      <div className="text-2xl font-bold text-green-600 dark:text-green-400">
-                        ฿{formatNumber(results.monthlyPayment)}
-                      </div>
-                    </div>
-
-                    <div className="bg-yellow-50 dark:bg-yellow-900/20 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        ค่าใช้จ่ายรายเดือนในอนาคต
-                      </div>
-                      <div className="text-xl font-bold text-yellow-600 dark:text-yellow-400">
-                        ฿{formatNumber(results.futureMonthlyExpenses)}
-                      </div>
-                    </div>
-
-                    <div className="bg-purple-50 dark:bg-purple-900/20 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        เงินที่ต้องมีเมื่อเกษียณ
-                      </div>
-                      <div className="text-xl font-bold text-purple-600 dark:text-purple-400">
-                        ฿{formatNumber(results.presentValueOfRetirementNeeds)}
-                      </div>
-                    </div>
-
-                    <div className="bg-indigo-50 dark:bg-indigo-900/20 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        มูลค่าอนาคตของเงินออมปัจจุบัน
-                      </div>
-                      <div className="text-lg font-bold text-indigo-600 dark:text-indigo-400">
-                        ฿{formatNumber(results.futureValueOfCurrentSavings)}
-                      </div>
-                    </div>
-
-                    <div className="bg-red-50 dark:bg-red-900/20 p-4 rounded-lg">
-                      <div className="text-sm text-gray-600 dark:text-gray-400">
-                        เงินที่ต้องออมเพิ่ม
-                      </div>
-                      <div className="text-lg font-bold text-red-600 dark:text-red-400">
-                        ฿{formatNumber(results.additionalSavingsNeeded)}
-                      </div>
-                    </div>
-                  </div>
-
-                  {/* คำแนะนำ */}
-                  <div className="p-4 bg-gray-50 dark:bg-gray-700 rounded-lg">
-                    <h3 className="font-semibold text-gray-800 dark:text-white mb-2">
-                      💡 คำแนะนำ
-                    </h3>
-                    <ul className="text-sm text-gray-600 dark:text-gray-300 space-y-1">
-                      <li>• เริ่มออมเงินเกษียณตั้งแต่อายุยังน้อย</li>
-                      <li>• พิจารณาลงทุนในกองทุนรวม RMF หรือ SSF</li>
-                      <li>• ปรับแผนการออมทุก 2-3 ปี</li>
-                      <li>• หาแหล่งรายได้เสริมหลังเกษียณ</li>
-                      <li>• คำนวณค่าใช้จ่ายในอนาคตรวมเงินเฟ้อ</li>
-                    </ul>
-                  </div>
-                </div>
-              </div>
-
-              {/* กราฟแสดงผล */}
-              <div className="grid lg:grid-cols-2 gap-8 mt-8">
-                {/* กราหการเติบโตของเงินออม */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                    📈 การเติบโตของเงินออม
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <AreaChart data={generateSavingsGrowthData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="year"
-                        className="text-sm"
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis
-                        tickFormatter={(value) =>
-                          `฿${(value / 1000000).toFixed(1)}M`
-                        }
-                        className="text-sm"
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        formatter={(value: number) => [
-                          `฿${formatNumber(value)}`,
-                          "",
-                        ]}
-                        labelFormatter={(label) => `อายุ ${label} ปี`}
-                      />
-                      <Legend />
-                      <Area
-                        type="monotone"
-                        dataKey="currentSavingsGrowth"
-                        stackId="1"
-                        stroke="#3B82F6"
-                        fill="#3B82F6"
-                        name="เงินออมปัจจุบัน"
-                      />
-                      <Area
-                        type="monotone"
-                        dataKey="newSavingsGrowth"
-                        stackId="1"
-                        stroke="#10B981"
-                        fill="#10B981"
-                        name="เงินออมเพิ่มเติม"
-                      />
-                    </AreaChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* กราฟเปรียบเทียบเงิน */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                    📊 เปรียบเทียบเงินออม
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <BarChart data={generateComparisonData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="category"
-                        className="text-sm"
-                        tick={{ fontSize: 10 }}
-                        angle={-45}
-                        textAnchor="end"
-                        height={80}
-                      />
-                      <YAxis
-                        tickFormatter={(value) =>
-                          `฿${(value / 1000000).toFixed(1)}M`
-                        }
-                        className="text-sm"
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        formatter={(value: number) => [
-                          `฿${formatNumber(value)}`,
-                          "",
-                        ]}
-                      />
-                      <Bar dataKey="amount" fill="#3B82F6" />
-                    </BarChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-
-              {/* กราฟแบ่งสัดส่วนและเส้นเป้าหมาย */}
-              <div className="grid lg:grid-cols-2 gap-8 mt-8">
-                {/* Pie Chart สัดส่วนเงินออม */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                    🥧 สัดส่วนเงินออม
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <PieChart>
-                      <Pie
-                        data={generatePieChartData()}
-                        cx="50%"
-                        cy="50%"
-                        labelLine={false}
-                        label={({ name, percent }: any) =>
-                          `${name}: ${(percent * 100).toFixed(0)}%`
-                        }
-                        outerRadius={80}
-                        fill="#8884d8"
-                        dataKey="value"
-                      >
-                        {generatePieChartData().map((entry, index) => (
-                          <Cell key={`cell-${index}`} fill={entry.color} />
-                        ))}
-                      </Pie>
-                      <Tooltip
-                        formatter={(value: number) => `฿${formatNumber(value)}`}
-                      />
-                    </PieChart>
-                  </ResponsiveContainer>
-                </div>
-
-                {/* กราฟเส้นเป้าหมาย */}
-                <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6">
-                  <h3 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white">
-                    🎯 ความคืบหน้าสู่เป้าหมาย
-                  </h3>
-                  <ResponsiveContainer width="100%" height={300}>
-                    <LineChart data={generateSavingsGrowthData()}>
-                      <CartesianGrid strokeDasharray="3 3" />
-                      <XAxis
-                        dataKey="year"
-                        className="text-sm"
-                        tick={{ fontSize: 12 }}
-                      />
-                      <YAxis
-                        tickFormatter={(value) =>
-                          `฿${(value / 1000000).toFixed(1)}M`
-                        }
-                        className="text-sm"
-                        tick={{ fontSize: 12 }}
-                      />
-                      <Tooltip
-                        formatter={(value: number) => [
-                          `฿${formatNumber(value)}`,
-                          "",
-                        ]}
-                        labelFormatter={(label) => `อายุ ${label} ปี`}
-                      />
-                      <Legend />
-                      <Line
-                        type="monotone"
-                        dataKey="totalSavings"
-                        stroke="#3B82F6"
-                        strokeWidth={3}
-                        name="เงินออมรวม"
-                      />
-                      <Line
-                        type="monotone"
-                        dataKey={() => results.presentValueOfRetirementNeeds}
-                        stroke="#EF4444"
-                        strokeDasharray="5 5"
-                        strokeWidth={2}
-                        name="เป้าหมายเกษียณ"
-                      />
-                    </LineChart>
-                  </ResponsiveContainer>
-                </div>
-              </div>
-            </div>
-
-            {/* Sidebar - แผนที่บันทึกไว้ */}
-            <div className="lg:col-span-1">
-              <div className="bg-white dark:bg-gray-800 rounded-lg shadow-lg p-6 sticky top-20">
-                <h2 className="text-xl font-semibold mb-4 text-gray-800 dark:text-white flex items-center">
-                  📋 แผนที่บันทึกไว้
-                  <span className="ml-2 text-sm bg-blue-100 dark:bg-blue-900 text-blue-800 dark:text-blue-200 px-2 py-1 rounded-full">
+        <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+          {/* Left Sidebar - Saved Plans */}
+          <div className="xl:col-span-3 order-2 xl:order-1">
+            <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 dark:border-gray-700/50 sticky top-6 overflow-hidden">
+              <div className="bg-slate-700 dark:bg-slate-800 p-4">
+                <h2 className="text-lg font-semibold text-white flex items-center justify-between">
+                  <span className="flex items-center gap-2">
+                    📋 แผนที่บันทึก
+                  </span>
+                  <span className="bg-white/20 px-2.5 py-0.5 rounded-full text-sm">
                     {savedPlans.length}
                   </span>
                 </h2>
+              </div>
 
+              <div className="p-4">
                 {savedPlans.length === 0 ? (
-                  <div className="text-center py-8">
-                    <div className="text-gray-400 text-4xl mb-2">📂</div>
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-3">
+                      <span className="text-3xl">📂</span>
+                    </div>
                     <p className="text-gray-500 dark:text-gray-400 text-sm">
                       ยังไม่มีแผนที่บันทึกไว้
                     </p>
+                    <p className="text-gray-400 dark:text-gray-500 text-xs mt-1">
+                      เริ่มสร้างแผนแรกของคุณ
+                    </p>
                   </div>
                 ) : (
-                  <div className="space-y-3 max-h-96 overflow-y-auto">
-                    {savedPlans.map((plan) => (
+                  <div className="space-y-3 max-h-[calc(100vh-200px)] overflow-y-auto pr-2 custom-scrollbar">
+                    {savedPlans.map((plan, index) => (
                       <div
                         key={plan.id}
-                        className="bg-gray-50 dark:bg-gray-700 rounded-lg p-3 hover:bg-gray-100 dark:hover:bg-gray-600 transition-colors"
+                        className="group bg-gray-50 dark:bg-gray-700/50 rounded-lg p-3.5 hover:shadow-md transition-all duration-200 border border-gray-200/50 dark:border-gray-600/50 hover:border-slate-400 dark:hover:border-slate-500"
                       >
-                        <div className="flex justify-between items-start mb-2">
-                          <h3 className="font-semibold text-gray-800 dark:text-white text-sm truncate pr-2">
-                            {plan.name}
-                          </h3>
+                        <div className="flex justify-between items-start mb-2.5">
+                          <div className="flex items-start gap-2 flex-1">
+                            <span className="text-base mt-0.5">💼</span>
+                            <div className="flex-1 min-w-0">
+                              <h3 className="font-semibold text-gray-800 dark:text-white text-sm truncate">
+                                {plan.name}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400 mt-0.5">
+                                แผนที่ {index + 1}
+                              </p>
+                            </div>
+                          </div>
                           <button
                             onClick={() => deletePlan(plan.id)}
                             disabled={loading}
-                            className="text-red-500 hover:text-red-700 text-xs disabled:text-gray-400 disabled:cursor-not-allowed"
+                            className="text-red-400 hover:text-red-600 transition-colors opacity-0 group-hover:opacity-100 disabled:opacity-30 p-1 hover:bg-red-50 dark:hover:bg-red-900/20 rounded"
                             title="ลบแผน"
                           >
-                            🗑️
+                            <svg
+                              className="w-4 h-4"
+                              fill="none"
+                              stroke="currentColor"
+                              viewBox="0 0 24 24"
+                            >
+                              <path
+                                strokeLinecap="round"
+                                strokeLinejoin="round"
+                                strokeWidth={2}
+                                d="M19 7l-.867 12.142A2 2 0 0116.138 21H7.862a2 2 0 01-1.995-1.858L5 7m5 4v6m4-6v6m1-10V4a1 1 0 00-1-1h-4a1 1 0 00-1 1v3M4 7h16"
+                              />
+                            </svg>
                           </button>
                         </div>
-                        <div className="text-xs text-gray-600 dark:text-gray-300 space-y-1 mb-3">
-                          <p>
-                            อายุ: {plan.currentAge} → {plan.retirementAge} ปี
-                          </p>
-                          <p>
-                            ค่าใช้จ่าย: ฿{formatNumber(plan.monthlyExpenses)}
-                          </p>
-                          <p>
-                            สร้างเมื่อ:{" "}
-                            {new Date(plan.createdAt).toLocaleDateString(
-                              "th-TH"
-                            )}
-                          </p>
+
+                        <div className="space-y-1.5 mb-3">
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-gray-500 dark:text-gray-400">
+                              👤 อายุ:
+                            </span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              {plan.currentAge} → {plan.retirementAge} ปี
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-gray-500 dark:text-gray-400">
+                              💵 ค่าใช้จ่าย:
+                            </span>
+                            <span className="font-medium text-gray-700 dark:text-gray-300">
+                              ฿{formatNumber(plan.monthlyExpenses)}
+                            </span>
+                          </div>
+                          <div className="flex items-center gap-2 text-xs">
+                            <span className="text-gray-500 dark:text-gray-400">
+                              📅 สร้างเมื่อ:
+                            </span>
+                            <span className="text-gray-600 dark:text-gray-400">
+                              {new Date(plan.createdAt).toLocaleDateString(
+                                "th-TH",
+                                {
+                                  day: "numeric",
+                                  month: "short",
+                                  year: "numeric",
+                                }
+                              )}
+                            </span>
+                          </div>
                         </div>
+
                         <button
                           onClick={() => loadPlan(plan)}
-                          className="w-full px-3 py-1.5 bg-blue-500 text-white rounded text-sm hover:bg-blue-600 transition-colors"
+                          className="w-full px-3 py-2 bg-slate-600 hover:bg-slate-700 text-white rounded-lg text-sm font-medium transition-all duration-200 shadow-sm hover:shadow-md"
                         >
                           โหลดแผน
                         </button>
@@ -887,18 +529,554 @@ export default function PlanPage() {
               </div>
             </div>
           </div>
+
+          {/* Main Content */}
+          <div className="xl:col-span-9 order-1 xl:order-2 space-y-6">
+            {/* Input & Results Cards */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Input Form */}
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+                <div className="bg-slate-700 dark:bg-slate-800 p-4">
+                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <span>📊</span> ข้อมูลการคำนวณ
+                  </h2>
+                </div>
+
+                <div className="p-5 space-y-4">
+                  {/* Plan Name */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                      <span>✏️</span> ชื่อแผน
+                    </label>
+                    <input
+                      type="text"
+                      value={planName}
+                      onChange={(e) => setPlanName(e.target.value)}
+                      placeholder="เช่น แผนเกษียณอายุ 60"
+                      className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                    />
+                  </div>
+
+                  {/* Age Inputs */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        👤 อายุปัจจุบัน
+                      </label>
+                      <input
+                        type="number"
+                        value={currentAge === 0 ? "" : currentAge}
+                        onChange={(e) =>
+                          handleNumberInput(e.target.value, setCurrentAge)
+                        }
+                        className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                        min="18"
+                        max="65"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        🎯 อายุเกษียณ
+                      </label>
+                      <input
+                        type="number"
+                        value={retirementAge === 0 ? "" : retirementAge}
+                        onChange={(e) =>
+                          handleNumberInput(e.target.value, setRetirementAge)
+                        }
+                        className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                        min={currentAge + 1}
+                        max="80"
+                      />
+                    </div>
+                  </div>
+
+                  {/* Financial Inputs */}
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      💵 ค่าใช้จ่ายรายเดือน
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="เช่น 30000"
+                      value={monthlyExpenses === 0 ? "" : monthlyExpenses}
+                      onChange={(e) =>
+                        handleNumberInput(e.target.value, setMonthlyExpenses)
+                      }
+                      className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                      min="1000"
+                    />
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      💰 เงินออมปัจจุบัน
+                    </label>
+                    <input
+                      type="number"
+                      placeholder="เช่น 150000"
+                      value={currentSavings === 0 ? "" : currentSavings}
+                      onChange={(e) =>
+                        handleNumberInput(e.target.value, setCurrentSavings)
+                      }
+                      className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                      min="0"
+                    />
+                  </div>
+
+                  {/* Percentage Inputs */}
+                  <div className="grid grid-cols-2 gap-3">
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        📈 ผลตอบแทน (%)
+                      </label>
+                      <input
+                        type="number"
+                        value={expectedReturn === 0 ? "" : expectedReturn}
+                        onChange={(e) =>
+                          handleNumberInput(e.target.value, setExpectedReturn)
+                        }
+                        className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                        min="1"
+                        max="20"
+                        step="0.1"
+                      />
+                    </div>
+
+                    <div>
+                      <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                        📉 อัตราเงินเฟ้อ (%)
+                      </label>
+                      <input
+                        type="number"
+                        value={inflationRate === 0 ? "" : inflationRate}
+                        onChange={(e) =>
+                          handleNumberInput(e.target.value, setInflationRate)
+                        }
+                        className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                        min="0"
+                        max="10"
+                        step="0.1"
+                      />
+                    </div>
+                  </div>
+
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5">
+                      ⏳ จำนวนปีหลังเกษียณ
+                    </label>
+                    <input
+                      type="number"
+                      value={retirementYears === 0 ? "" : retirementYears}
+                      onChange={(e) =>
+                        handleNumberInput(e.target.value, setRetirementYears)
+                      }
+                      className="w-full px-3.5 py-2.5 border border-gray-300 dark:border-gray-600 rounded-lg focus:ring-2 focus:ring-slate-500 focus:border-slate-500 dark:bg-gray-700 dark:text-white transition-all"
+                      min="1"
+                      max="50"
+                    />
+                  </div>
+
+                  {/* Save Button */}
+                  <button
+                    onClick={savePlan}
+                    disabled={loading}
+                    className="w-full px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
+                  >
+                    {loading ? "กำลังบันทึก..." : "💾 บันทึกแผน"}
+                  </button>
+                </div>
+              </div>
+
+              {/* Results Panel */}
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+                <div className="bg-emerald-700 dark:bg-emerald-800 p-4">
+                  <h2 className="text-lg font-semibold text-white flex items-center gap-2">
+                    <span>🎯</span> ผลการคำนวณ
+                  </h2>
+                </div>
+
+                <div className="p-5 space-y-3">
+                  {/* Years to Retirement */}
+                  <div className="bg-blue-50 dark:bg-blue-900/20 p-3.5 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">
+                          ⏰ ปีที่เหลือก่อนเกษียณ
+                        </div>
+                        <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">
+                          {results.yearsToRetirement}{" "}
+                          <span className="text-base">ปี</span>
+                        </div>
+                      </div>
+                      <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-2xl shadow-sm">
+                        ⏳
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Monthly Savings Needed */}
+                  <div className="bg-emerald-50 dark:bg-emerald-900/20 p-3.5 rounded-lg border border-emerald-200/50 dark:border-emerald-800/50">
+                    <div className="flex items-center justify-between">
+                      <div>
+                        <div className="text-xs font-medium text-emerald-700 dark:text-emerald-400 mb-1">
+                          💰 เงินออมรายเดือนที่ต้องการ
+                        </div>
+                        <div className="text-xl font-bold text-emerald-800 dark:text-emerald-300">
+                          ฿{formatNumber(results.monthlyPayment)}
+                        </div>
+                      </div>
+                      <div className="w-14 h-14 bg-emerald-600 rounded-xl flex items-center justify-center text-2xl shadow-sm">
+                        💵
+                      </div>
+                    </div>
+                  </div>
+
+                  {/* Future Monthly Expenses */}
+                  <div className="bg-amber-50 dark:bg-amber-900/20 p-3 rounded-lg border border-amber-200/50 dark:border-amber-800/50">
+                    <div className="text-xs font-medium text-amber-700 dark:text-amber-400 mb-1">
+                      📊 ค่าใช้จ่ายรายเดือนในอนาคต
+                    </div>
+                    <div className="text-lg font-bold text-amber-800 dark:text-amber-300">
+                      ฿{formatNumber(results.futureMonthlyExpenses)}
+                    </div>
+                  </div>
+
+                  {/* Retirement Goal */}
+                  <div className="bg-purple-50 dark:bg-purple-900/20 p-3 rounded-lg border border-purple-200/50 dark:border-purple-800/50">
+                    <div className="text-xs font-medium text-purple-700 dark:text-purple-400 mb-1">
+                      🎯 เงินที่ต้องมีเมื่อเกษียณ
+                    </div>
+                    <div className="text-lg font-bold text-purple-800 dark:text-purple-300">
+                      ฿{formatNumber(results.presentValueOfRetirementNeeds)}
+                    </div>
+                  </div>
+
+                  {/* Future Value of Current Savings */}
+                  <div className="bg-indigo-50 dark:bg-indigo-900/20 p-3 rounded-lg border border-indigo-200/50 dark:border-indigo-800/50">
+                    <div className="text-xs font-medium text-indigo-700 dark:text-indigo-400 mb-1">
+                      📈 มูลค่าอนาคตของเงินออมปัจจุบัน
+                    </div>
+                    <div className="text-base font-bold text-indigo-800 dark:text-indigo-300">
+                      ฿{formatNumber(results.futureValueOfCurrentSavings)}
+                    </div>
+                  </div>
+
+                  {/* Additional Savings Needed */}
+                  <div className="bg-rose-50 dark:bg-rose-900/20 p-3 rounded-lg border border-rose-200/50 dark:border-rose-800/50">
+                    <div className="text-xs font-medium text-rose-700 dark:text-rose-400 mb-1">
+                      ⚠️ เงินที่ต้องออมเพิ่ม
+                    </div>
+                    <div className="text-base font-bold text-rose-800 dark:text-rose-300">
+                      ฿{formatNumber(results.additionalSavingsNeeded)}
+                    </div>
+                  </div>
+
+                  {/* Tips Section */}
+                  <div className="mt-3 p-3.5 bg-gray-50 dark:bg-gray-700/50 rounded-lg border border-gray-200/50 dark:border-gray-600/50">
+                    <h3 className="font-semibold text-gray-800 dark:text-white mb-2 flex items-center gap-1.5 text-sm">
+                      <span>💡</span> คำแนะนำ
+                    </h3>
+                    <ul className="text-xs text-gray-600 dark:text-gray-300 space-y-1.5">
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-emerald-600 mt-0.5">✓</span>
+                        <span>เริ่มออมเงินเกษียณตั้งแต่อายุยังน้อย</span>
+                      </li>
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-emerald-600 mt-0.5">✓</span>
+                        <span>พิจารณาลงทุนในกองทุนรวม RMF หรือ SSF</span>
+                      </li>
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-emerald-600 mt-0.5">✓</span>
+                        <span>ปรับแผนการออมทุก 2-3 ปี</span>
+                      </li>
+                      <li className="flex items-start gap-1.5">
+                        <span className="text-emerald-600 mt-0.5">✓</span>
+                        <span>หาแหล่งรายได้เสริมหลังเกษียณ</span>
+                      </li>
+                    </ul>
+                  </div>
+                </div>
+              </div>
+            </div>
+
+            {/* Charts Section */}
+            <div className="grid lg:grid-cols-2 gap-6">
+              {/* Savings Growth Chart */}
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+                <div className="bg-sky-700 dark:bg-sky-800 p-3.5">
+                  <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                    <span>📈</span> การเติบโตของเงินออม
+                  </h3>
+                </div>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <AreaChart data={generateSavingsGrowthData()}>
+                      <defs>
+                        <linearGradient
+                          id="colorCurrent"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#6B7FD7"
+                            stopOpacity={0.6}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#6B7FD7"
+                            stopOpacity={0.05}
+                          />
+                        </linearGradient>
+                        <linearGradient
+                          id="colorNew"
+                          x1="0"
+                          y1="0"
+                          x2="0"
+                          y2="1"
+                        >
+                          <stop
+                            offset="5%"
+                            stopColor="#7BC8A4"
+                            stopOpacity={0.6}
+                          />
+                          <stop
+                            offset="95%"
+                            stopColor="#7BC8A4"
+                            stopOpacity={0.05}
+                          />
+                        </linearGradient>
+                      </defs>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fontSize: 11 }}
+                        stroke="#9ca3af"
+                      />
+                      <YAxis
+                        tickFormatter={(value) =>
+                          `฿${(value / 1000000).toFixed(1)}M`
+                        }
+                        tick={{ fontSize: 11 }}
+                        stroke="#9ca3af"
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          `฿${formatNumber(value)}`,
+                          "",
+                        ]}
+                        labelFormatter={(label) => `อายุ ${label} ปี`}
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      <Area
+                        type="monotone"
+                        dataKey="currentSavingsGrowth"
+                        stackId="1"
+                        stroke="#6B7FD7"
+                        strokeWidth={2}
+                        fill="url(#colorCurrent)"
+                        name="เงินออมปัจจุบัน"
+                      />
+                      <Area
+                        type="monotone"
+                        dataKey="newSavingsGrowth"
+                        stackId="1"
+                        stroke="#7BC8A4"
+                        strokeWidth={2}
+                        fill="url(#colorNew)"
+                        name="เงินออมเพิ่มเติม"
+                      />
+                    </AreaChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Comparison Bar Chart */}
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+                <div className="bg-orange-700 dark:bg-orange-800 p-3.5">
+                  <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                    <span>📊</span> เปรียบเทียบเงินออม
+                  </h3>
+                </div>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <BarChart data={generateComparisonData()}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="category"
+                        tick={{ fontSize: 10 }}
+                        angle={-12}
+                        textAnchor="end"
+                        height={70}
+                        stroke="#9ca3af"
+                      />
+                      <YAxis
+                        tickFormatter={(value) =>
+                          `฿${(value / 1000000).toFixed(1)}M`
+                        }
+                        tick={{ fontSize: 11 }}
+                        stroke="#9ca3af"
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          `฿${formatNumber(value)}`,
+                          "",
+                        ]}
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                      <Bar
+                        dataKey="amount"
+                        fill="#6B7FD7"
+                        radius={[6, 6, 0, 0]}
+                      />
+                    </BarChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Pie Chart */}
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+                <div className="bg-rose-700 dark:bg-rose-800 p-3.5">
+                  <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                    <span>🥧</span> สัดส่วนเงินออม
+                  </h3>
+                </div>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <PieChart>
+                      <Pie
+                        data={generatePieChartData()}
+                        cx="50%"
+                        cy="50%"
+                        labelLine={false}
+                        label={({ name, percent }: any) =>
+                          `${name}: ${(percent * 100).toFixed(0)}%`
+                        }
+                        outerRadius={85}
+                        fill="#8884d8"
+                        dataKey="value"
+                      >
+                        {generatePieChartData().map((entry, index) => (
+                          <Cell key={`cell-${index}`} fill={entry.color} />
+                        ))}
+                      </Pie>
+                      <Tooltip
+                        formatter={(value: number) => `฿${formatNumber(value)}`}
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                    </PieChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+
+              {/* Line Chart */}
+              <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-md border border-gray-200/50 dark:border-gray-700/50 overflow-hidden">
+                <div className="bg-violet-700 dark:bg-violet-800 p-3.5">
+                  <h3 className="text-base font-semibold text-white flex items-center gap-2">
+                    <span>🎯</span> ความคืบหน้าสู่เป้าหมาย
+                  </h3>
+                </div>
+                <div className="p-5">
+                  <ResponsiveContainer width="100%" height={280}>
+                    <LineChart data={generateSavingsGrowthData()}>
+                      <CartesianGrid
+                        strokeDasharray="3 3"
+                        stroke="#e5e7eb"
+                        opacity={0.5}
+                      />
+                      <XAxis
+                        dataKey="year"
+                        tick={{ fontSize: 11 }}
+                        stroke="#9ca3af"
+                      />
+                      <YAxis
+                        tickFormatter={(value) =>
+                          `฿${(value / 1000000).toFixed(1)}M`
+                        }
+                        tick={{ fontSize: 11 }}
+                        stroke="#9ca3af"
+                      />
+                      <Tooltip
+                        formatter={(value: number) => [
+                          `฿${formatNumber(value)}`,
+                          "",
+                        ]}
+                        labelFormatter={(label) => `อายุ ${label} ปี`}
+                        contentStyle={{
+                          backgroundColor: "rgba(255, 255, 255, 0.95)",
+                          border: "1px solid #e5e7eb",
+                          borderRadius: "8px",
+                          boxShadow: "0 2px 4px rgba(0, 0, 0, 0.1)",
+                        }}
+                      />
+                      <Legend wrapperStyle={{ fontSize: "12px" }} />
+                      <Line
+                        type="monotone"
+                        dataKey="totalSavings"
+                        stroke="#6B7FD7"
+                        strokeWidth={2.5}
+                        name="เงินออมรวม"
+                        dot={{ r: 3 }}
+                        activeDot={{ r: 5 }}
+                      />
+                      <Line
+                        type="monotone"
+                        dataKey={() => results.presentValueOfRetirementNeeds}
+                        stroke="#E27D60"
+                        strokeDasharray="4 4"
+                        strokeWidth={2}
+                        name="เป้าหมายเกษียณ"
+                        dot={false}
+                      />
+                    </LineChart>
+                  </ResponsiveContainer>
+                </div>
+              </div>
+            </div>
+          </div>
         </div>
       </div>
+
+      {/* Snackbar */}
       <Snackbar
         open={snackbar.open}
         autoHideDuration={4000}
         onClose={handleCloseSnackbar}
-        anchorOrigin={{ vertical: 'top', horizontal: 'right' }}
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
       >
-        <Alert 
-          onClose={handleCloseSnackbar} 
+        <Alert
+          onClose={handleCloseSnackbar}
           severity={snackbar.severity}
           variant="filled"
+          sx={{ borderRadius: "10px" }}
         >
           {snackbar.message}
         </Alert>
@@ -908,31 +1086,50 @@ export default function PlanPage() {
       <Dialog
         open={confirmDialog.open}
         onClose={handleCancelDelete}
-        aria-labelledby="confirm-dialog-title"
-        aria-describedby="confirm-dialog-description"
+        PaperProps={{
+          style: {
+            borderRadius: "12px",
+          },
+        }}
       >
-        <DialogTitle id="confirm-dialog-title">
+        <DialogTitle sx={{ fontWeight: "600" }}>
           {confirmDialog.title}
         </DialogTitle>
         <DialogContent>
-          <DialogContentText id="confirm-dialog-description">
-            {confirmDialog.message}
-          </DialogContentText>
+          <DialogContentText>{confirmDialog.message}</DialogContentText>
         </DialogContent>
-        <DialogActions>
-          <Button onClick={handleCancelDelete} color="primary">
+        <DialogActions sx={{ padding: "12px 20px" }}>
+          <Button onClick={handleCancelDelete} sx={{ borderRadius: "8px" }}>
             ยกเลิก
           </Button>
-          <Button 
-            onClick={confirmDialog.onConfirm} 
-            color="error" 
+          <Button
+            onClick={confirmDialog.onConfirm}
+            color="error"
             variant="contained"
             disabled={loading}
+            sx={{ borderRadius: "8px" }}
           >
             ลบ
           </Button>
         </DialogActions>
       </Dialog>
+
+      <style jsx global>{`
+        .custom-scrollbar::-webkit-scrollbar {
+          width: 5px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+          background: #f3f4f6;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+          background: #9ca3af;
+          border-radius: 10px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+          background: #6b7280;
+        }
+      `}</style>
     </div>
   );
 }

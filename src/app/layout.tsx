@@ -12,8 +12,7 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
 
-  // Check if the path starts with /tool/
-  const isToolPath = pathname.startsWith("/tool/");
+  const isToolPath = pathname.startsWith("/tool/") || pathname.startsWith("/pricing");
 
   if (isToolPath) {
     return (

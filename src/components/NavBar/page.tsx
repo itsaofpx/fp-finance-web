@@ -30,7 +30,7 @@ const NavBar = () => {
           <div className="flex items-center">
             {isLogin ? (
               <button
-                onClick={() => handleNavigation("/news")}
+                onClick={() => handleNavigation("/hub")}
                 className="text-xl font-bold text-white"
               >
                 Finance Pro
