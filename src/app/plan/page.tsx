@@ -545,7 +545,7 @@ export default function PlanPage() {
                 <div className="p-5 space-y-4">
                   {/* Plan Name */}
                   <div>
-                    <label className="block text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
+                    <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-1.5 flex items-center gap-1.5">
                       <span>✏️</span> ชื่อแผน
                     </label>
                     <input

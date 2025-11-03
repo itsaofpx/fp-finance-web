@@ -511,7 +511,7 @@ const StockPricingPage = () => {
   return (
     <div className="min-h-screen w-full bg-slate-950 text-white relative">
       {/* Subtle Background Pattern */}
-      <div className="absolute inset-0 opacity-5 fixed">
+      <div className="inset-0 opacity-5 fixed">
         <div
           className="absolute inset-0"
           style={{

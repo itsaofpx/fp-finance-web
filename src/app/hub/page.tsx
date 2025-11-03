@@ -37,12 +37,16 @@ interface INewsResponse {
 
 interface IStock {
   ticker: string;
+  name: string;
   price: number;
   change: number;
   changePercent: number;
-  open: number;
-  close: number;
-  previousClose: number;
+  open?: number;
+  high?: number;
+  low?: number;
+  volume?: number;
+  market_cap?: number;
+  sector?: string;
 }
 
 interface ITool {
@@ -109,7 +113,7 @@ const tools: ITool[] = [
 
 const stockCategories: IStockCategory[] = [
   {
-    title: "Market",
+    title: "Market ETFs",
     icon: <TrendingUp className="w-6 h-6" />,
     color: "from-blue-500 to-cyan-500",
     tickers: ["SPY", "QQQ", "DIA", "IWM"],
@@ -158,8 +162,6 @@ const HubPage = () => {
   const [loadingStocks, setLoadingStocks] = useState(true);
   const [loadingPlans, setLoadingPlans] = useState(true);
   const [stockError, setStockError] = useState<string | null>(null);
-
-  const API_KEY = "dPjYK1kmDJGKg8_LG0kbz2gxFCx4f4Im";
 
   const getCookie = (name: string): string | null => {
     const value = `; ${document.cookie}`;
@@ -211,62 +213,55 @@ const HubPage = () => {
       try {
         const results: { [key: string]: IStock[] } = {};
 
-        // Initialize categories
         stockCategories.forEach((category) => {
           results[category.title] = [];
         });
 
-        // Get all unique tickers
         const allTickers = [
           ...new Set(stockCategories.flatMap((cat) => cat.tickers)),
         ];
 
-        // Fetch stock data from Polygon API
+        console.log("Fetching stocks for tickers:", allTickers);
+
         const stockPromises = allTickers.map(async (ticker) => {
           try {
-            const quoteRes = await fetch(
-              `https://api.polygon.io/v2/snapshot/locale/us/markets/stocks/tickers/${ticker}?apiKey=${API_KEY}`
+            console.log(`Fetching data for ${ticker}...`);
+
+            const response = await fetch(
+              `http://localhost:3001/stock/data?ticker=${ticker.toUpperCase()}`,
+              {
+                method: "GET",
+                headers: {
+                  "Content-Type": "application/json",
+                },
+              }
             );
 
-            if (!quoteRes.ok) {
-              throw new Error(`HTTP error! status: ${quoteRes.status}`);
+            if (!response.ok) {
+              throw new Error(`HTTP error! status: ${response.status}`);
             }
 
-            const quoteData = await quoteRes.json();
+            const result = await response.json();
+            console.log(`Data received for ${ticker}:`, result);
 
-            // Check if we have ticker data (correct structure based on your example)
-            if (!quoteData.ticker) {
-              throw new Error(`No ticker data for ${ticker}`);
+            if (result.success && result.data) {
+              const stockData = result.data;
+              return {
+                ticker: stockData.ticker,
+                name: stockData.name || ticker,
+                price: stockData.price || 0,
+                change: stockData.change || 0,
+                changePercent: stockData.changePercent || 0,
+                open: stockData.open,
+                high: stockData.high,
+                low: stockData.low,
+                volume: stockData.volume,
+                market_cap: stockData.market_cap,
+                sector: stockData.sector,
+              };
+            } else {
+              throw new Error(result.message || `No data for ${ticker}`);
             }
-
-            const tickerData = quoteData.ticker;
-
-            // Get current price from lastTrade or day.c
-            const currentPrice =
-              tickerData.lastTrade?.p || tickerData.day?.c || 0;
-
-            // Get previous day's close
-            const previousClose = tickerData.prevDay?.c || 0;
-
-            // Get today's open
-            const open = tickerData.day?.o || 0;
-
-            // Use the provided todaysChange and todaysChangePerc if available
-            const change =
-              tickerData.todaysChange || currentPrice - previousClose;
-            const changePercent =
-              tickerData.todaysChangePerc ||
-              (previousClose > 0 ? (change / previousClose) * 100 : 0);
-
-            return {
-              ticker,
-              price: currentPrice,
-              change,
-              changePercent,
-              open,
-              close: currentPrice,
-              previousClose,
-            };
           } catch (error) {
             console.error(`Error fetching ${ticker}:`, error);
             return null;
@@ -274,9 +269,11 @@ const HubPage = () => {
         });
 
         const stockData = await Promise.all(stockPromises);
+        console.log("All stock data:", stockData);
 
-        // Filter out null results and organize by category
-        const validStocks = stockData.filter((stock) => stock !== null);
+        const validStocks = stockData.filter(
+          (stock) => stock !== null
+        ) as IStock[];
 
         stockCategories.forEach((category) => {
           category.tickers.forEach((ticker) => {
@@ -287,15 +284,18 @@ const HubPage = () => {
           });
         });
 
+        console.log("Organized stock data:", results);
         setStocksByCategory(results);
 
-        // Set error if no stocks were loaded
         const totalStocks = Object.values(results).reduce(
           (sum, stocks) => sum + stocks.length,
           0
         );
+
         if (totalStocks === 0) {
           setStockError("ไม่สามารถโหลดข้อมูลหุ้นได้ กรุณาลองใหม่อีกครั้ง");
+        } else {
+          console.log(`Successfully loaded ${totalStocks} stocks`);
         }
       } catch (error) {
         console.error("เกิดข้อผิดพลาดในการดึงข้อมูลหุ้น:", error);
@@ -352,39 +352,39 @@ const HubPage = () => {
     return new Intl.NumberFormat("th-TH").format(parseFloat(amount));
   };
 
-  const getStockName = (ticker: string) => {
+  const getStockName = (stock: IStock) => {
+    if (stock.name && stock.name !== stock.ticker) {
+      return stock.name;
+    }
+
     const stockNames: { [key: string]: string } = {
       SPY: "S&P 500",
       QQQ: "NASDAQ 100",
       DIA: "Dow Jones",
       IWM: "Russell 2000",
-
       NVDA: "NVIDIA",
       AAPL: "Apple",
       AVGO: "Broadcom",
       AMD: "AMD",
-
       MSFT: "Microsoft",
       GOOGL: "Alphabet",
       META: "Meta",
       ORCL: "Oracle",
-
       "BRK.B": "Berkshire",
       JPM: "JPMorgan",
       V: "Visa",
       MA: "Mastercard",
-
       LLY: "Eli Lilly",
       ABBV: "AbbVie",
       JNJ: "Johnson & Johnson",
       MRK: "Merck",
-
       AMZN: "Amazon",
       WMT: "Walmart",
       COST: "Costco",
       HD: "Home Depot",
     };
-    return stockNames[ticker] || ticker;
+
+    return stockNames[stock.ticker] || stock.ticker;
   };
 
   const getHeatmapColor = (changePercent: number) => {
@@ -425,16 +425,11 @@ const HubPage = () => {
 
   const row1 = stockCategories.slice(0, 3);
   const row2 = stockCategories.slice(3, 6);
-  const row3 = stockCategories.slice(6, 7);
 
   const renderStockRow = (categories: IStockCategory[], rowIndex: number) => (
     <div
       key={rowIndex}
-      className={`grid gap-8 mb-12 ${
-        categories.length === 1
-          ? "grid-cols-1 max-w-md mx-auto"
-          : "grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-      }`}
+      className="grid gap-8 mb-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
     >
       {categories.map((category, categoryIndex) => (
         <div
@@ -460,9 +455,9 @@ const HubPage = () => {
                 return (
                   <div
                     key={stock.ticker}
-                    className="relative p-4 rounded-xl transition-all duration-300 hover:scale-105 border-2 min-h-24"
+                    className="relative p-4 rounded-xl transition-all duration-300 hover:scale-105 border-2 min-h-24 cursor-pointer"
                     onClick={() => {
-                      router.push(`pricing?ticker=${stock.ticker}`);
+                      router.push(`/pricing?ticker=${stock.ticker}`);
                     }}
                     style={{
                       backgroundColor: heatmapStyle.backgroundColor,
@@ -472,7 +467,7 @@ const HubPage = () => {
                     {/* Top Left: Company Name & Ticker */}
                     <div className="absolute top-2 left-2">
                       <div className="font-bold text-white text-xs leading-tight">
-                        {getStockName(stock.ticker)}
+                        {getStockName(stock)}
                       </div>
                       <div className="text-xs text-slate-400 mt-0.5">
                         {stock.ticker}
@@ -564,7 +559,10 @@ const HubPage = () => {
 
             {loadingStocks ? (
               <div className="flex justify-center">
-                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
+                <div className="text-center">
+                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
+                  <p className="text-slate-400">กำลังโหลดข้อมูลหุ้น...</p>
+                </div>
               </div>
             ) : stockError ? (
               <div className="text-center py-12">
@@ -584,7 +582,6 @@ const HubPage = () => {
               <div className="space-y-8">
                 {renderStockRow(row1, 0)}
                 {renderStockRow(row2, 1)}
-                {renderStockRow(row3, 2)}
               </div>
             )}
           </section>
@@ -775,6 +772,7 @@ const HubPage = () => {
                 <div
                   key={tool.title}
                   className="group cursor-pointer rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 overflow-hidden hover:border-slate-600/50 transition-all duration-300 hover:scale-105"
+                  onClick={() => router.push(tool.path)}
                   style={{ animationDelay: `${index * 100}ms` }}
                 >
                   <div className={`h-2 bg-gradient-to-r ${tool.color}`}></div>
