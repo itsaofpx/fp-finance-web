@@ -19,7 +19,10 @@ const NavBar = () => {
 
   // Function to handle navigation
   const handleNavigation = (path: string) => {
-    router.push(path);
+    const absolute = path.startsWith("/")
+      ? path
+      : `/${path.replace(/^\/+/, "")}`;
+    router.push(absolute);
   };
 
   return (
