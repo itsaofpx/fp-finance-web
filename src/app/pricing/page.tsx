@@ -574,7 +574,7 @@ const StockPricingPage = () => {
           >
             <div className="h-full bg-slate-900/95 backdrop-blur-xl border-r border-slate-700 overflow-y-auto">
               <div className="p-6 space-y-6 pt-20">
-                <div className="flex items-center gap-3 mb-6">
+                <div className="flex items-center pt-8 gap-3 mb-6">
                   <div className="p-2 bg-blue-600 rounded-lg">
                     <Brain className="w-5 h-5 text-white" />
                   </div>

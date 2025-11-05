@@ -205,6 +205,7 @@ export default function GoalPlanPage() {
       );
 
       const savedPlan = response.data;
+      savedPlan.targetLumpSum = savedPlan.money;
       setSavedPlans((prevPlans) => [...prevPlans, savedPlan]);
       setPlanName("");
       setSnackbar({

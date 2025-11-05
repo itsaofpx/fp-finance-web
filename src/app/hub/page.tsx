@@ -62,7 +62,8 @@ interface IRetirementPlan {
   name: string;
   currentAge: number;
   retirementAge: number;
-  monthlyExpenses: string;
+  planType: string;
+  money: string;
   currentSavings: string;
   expectedReturn: string;
   inflationRate: string;
@@ -92,21 +93,21 @@ const tools: ITool[] = [
     title: "เครื่องคำนวณราคาเฉลี่ยหุ้น",
     description: "คำนวณราคาเฉลี่ยของหุ้นเพื่อวางแผนการลงทุนอย่างมีประสิทธิภาพ",
     icon: "📊",
-    path: "/tools/average-calculator",
+    path: "/tool/average-calculator",
     color: "from-blue-500 to-cyan-500",
   },
   {
     title: "เครื่องคำนวณดอกเบี้ยทบต้น",
     description: "คำนวณการเติบโตของเงินลงทุนด้วยดอกเบี้ยทบต้นในระยะยาว",
     icon: "💹",
-    path: "/tools/compound-interest",
+    path: "/tool/compound-interest",
     color: "from-green-500 to-emerald-500",
   },
   {
     title: "ตัวช่วยจัดสรรเงิน",
     description: "แบ่งเงินลงทุนและเงินออมอย่างสมดุลตามหลักการเงิน",
     icon: "💰",
-    path: "/tools/money-allocation",
+    path: "/tool/money-allocation",
     color: "from-purple-500 to-pink-500",
   },
 ];
@@ -327,6 +328,8 @@ const HubPage = () => {
 
           if (response.ok) {
             const plansData = await response.json();
+            console.log(plansData);
+
             setRetirementPlans(plansData);
           } else {
             console.log("ไม่พบข้อมูลแผนการเกษียณ");
@@ -642,7 +645,10 @@ const HubPage = () => {
             )}
 
             <div className="text-center mt-8">
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-full hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105">
+              <button
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-purple-500 to-pink-500 text-white font-medium rounded-full hover:from-purple-600 hover:to-pink-600 transition-all duration-300 hover:scale-105"
+                onClick={() => router.push("/news")}
+              >
                 ดูข่าวทั้งหมด
                 <ArrowRight className="w-4 h-4" />
               </button>
@@ -668,6 +674,15 @@ const HubPage = () => {
                 {retirementPlans.map((plan, index) => (
                   <div
                     key={plan.id}
+                    onClick={() => {
+                      switch (plan.planType) {
+                        case "gb":
+                          router.push(`/plan/goal-based`);
+                          break;
+                        case "ib":
+                          router.push(`/plan/income-based`);
+                      }
+                    }}
                     className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 p-6 hover:border-slate-600/50 transition-all duration-300 hover:scale-105"
                     style={{ animationDelay: `${index * 100}ms` }}
                   >
@@ -713,7 +728,7 @@ const HubPage = () => {
                             ค่าใช้จ่าย/เดือน
                           </p>
                           <p className="text-blue-400 font-semibold">
-                            ฿{formatCurrency(plan.monthlyExpenses)}
+                            ฿{formatCurrency(plan.money)}
                           </p>
                         </div>
                       </div>
@@ -748,7 +763,12 @@ const HubPage = () => {
                   <p className="text-slate-400 mb-6">
                     เริ่มวางแผนการเกษียณของคุณเพื่ออนาคตที่มั่นคง
                   </p>
-                  <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:scale-105">
+                  <button
+                    className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-orange-500 to-red-500 text-white font-medium rounded-full hover:from-orange-600 hover:to-red-600 transition-all duration-300 hover:scale-105"
+                    onClick={() => {
+                      router.push("/plan");
+                    }}
+                  >
                     สร้างแผนการเกษียณ
                     <ArrowRight className="w-4 h-4" />
                   </button>
@@ -794,7 +814,10 @@ const HubPage = () => {
             </div>
 
             <div className="text-center mt-8">
-              <button className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium rounded-full hover:from-green-600 hover:to-emerald-600 transition-all duration-300 hover:scale-105">
+              <button
+                className="inline-flex items-center gap-2 px-6 py-3 bg-gradient-to-r from-green-500 to-emerald-500 text-white font-medium rounded-full hover:from-green-600 hover:to-emerald-600 transition-all duration-300 hover:scale-105"
+                onClick={() => router.push("/tool")}
+              >
                 ดูเครื่องมือทั้งหมด
                 <ArrowRight className="w-4 h-4" />
               </button>

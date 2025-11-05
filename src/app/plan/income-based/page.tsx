@@ -204,6 +204,7 @@ export default function IncomePlanPage() {
       );
 
       const savedPlan = response.data;
+      savedPlan.monthlyExpenses = savedPlan.money;
       setSavedPlans((prevPlans) => [...prevPlans, savedPlan]);
       setPlanName("");
       setSnackbar({
