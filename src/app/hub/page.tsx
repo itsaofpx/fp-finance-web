@@ -18,75 +18,16 @@ import {
   Home,
   Flame,
   AlertCircle,
+  ShoppingBag,
+  Phone,
+  Truck,
+  Bolt,
+  Building,
+  Globe,
+  Pill,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
-
-interface INewsArticle {
-  id: string;
-  title: string;
-  description: string;
-  url: string;
-  source: string;
-  publishedAt: string;
-  estimatedReadTime: number;
-}
-
-interface INewsResponse {
-  data: INewsArticle[];
-}
-
-interface IStock {
-  ticker: string;
-  name: string;
-  price: number;
-  change: number;
-  changePercent: number;
-  open?: number;
-  high?: number;
-  low?: number;
-  volume?: number;
-  market_cap?: number;
-  sector?: string;
-}
-
-interface ITool {
-  title: string;
-  description: string;
-  icon: string;
-  path: string;
-  color: string;
-}
-
-interface IRetirementPlan {
-  id: string;
-  name: string;
-  currentAge: number;
-  retirementAge: number;
-  planType: string;
-  money: string;
-  currentSavings: string;
-  expectedReturn: string;
-  inflationRate: string;
-  retirementYears: number;
-  accountId: string;
-  createdAt: string;
-  updatedAt: string;
-  deletedAt: string | null;
-}
-
-interface IAccount {
-  email: string;
-  id: string;
-  googleId: string;
-  givenName: string;
-}
-
-interface IStockCategory {
-  title: string;
-  icon: React.ReactNode;
-  color: string;
-  tickers: string[];
-}
+import axios from "axios";
 
 const tools: ITool[] = [
   {
@@ -114,28 +55,40 @@ const tools: ITool[] = [
 
 const stockCategories: IStockCategory[] = [
   {
-    title: "Market ETFs",
-    icon: <TrendingUp className="w-6 h-6" />,
+    title: "Technology",
+    icon: <Cpu className="w-6 h-6" />,
     color: "from-blue-500 to-cyan-500",
-    tickers: ["SPY", "QQQ", "DIA", "IWM"],
+    tickers: ["AAPL", "MSFT", "GOOGL", "META"],
+  },
+  {
+    title: "Finance",
+    icon: <Building2 className="w-6 h-6" />,
+    color: "from-green-500 to-emerald-500",
+    tickers: ["JPM", "V", "MA", "BRK.B"],
+  },
+  {
+    title: "Healthcare",
+    icon: <Heart className="w-6 h-6" />,
+    color: "from-red-500 to-pink-500",
+    tickers: ["JNJ", "MRK", "PFE", "ABBV"],
+  },
+  {
+    title: "Energy",
+    icon: <Bolt className="w-6 h-6" />,
+    color: "from-yellow-500 to-orange-500",
+    tickers: ["XOM", "CVX", "BP", "COP"],
   },
   {
     title: "Electronic Technology",
     icon: <Zap className="w-6 h-6" />,
     color: "from-yellow-500 to-orange-500",
-    tickers: ["NVDA", "AAPL", "AVGO", "AMD"],
+    tickers: ["NVDA", "AMD", "AVGO", "AAPL"],
   },
   {
     title: "Technology Services",
     icon: <Cpu className="w-6 h-6" />,
     color: "from-purple-500 to-pink-500",
     tickers: ["MSFT", "GOOGL", "META", "ORCL"],
-  },
-  {
-    title: "Finance",
-    icon: <Building2 className="w-6 h-6" />,
-    color: "from-green-500 to-emerald-500",
-    tickers: ["BRK.B", "JPM", "V", "MA"],
   },
   {
     title: "Health Technology",
@@ -148,6 +101,54 @@ const stockCategories: IStockCategory[] = [
     icon: <ShoppingCart className="w-6 h-6" />,
     color: "from-indigo-500 to-purple-500",
     tickers: ["AMZN", "WMT", "COST", "HD"],
+  },
+  {
+    title: "Consumer Goods",
+    icon: <ShoppingBag className="w-6 h-6" />,
+    color: "from-pink-500 to-red-500",
+    tickers: ["PG", "KO", "PEP", "UL"],
+  },
+  {
+    title: "Utilities",
+    icon: <Home className="w-6 h-6" />,
+    color: "from-cyan-500 to-blue-500",
+    tickers: ["NEE", "DUK", "SO", "EXC"],
+  },
+  {
+    title: "Telecommunications",
+    icon: <Phone className="w-6 h-6" />,
+    color: "from-purple-500 to-indigo-500",
+    tickers: ["VZ", "T", "TMUS", "CHTR"],
+  },
+  {
+    title: "Transportation",
+    icon: <Truck className="w-6 h-6" />,
+    color: "from-orange-500 to-yellow-500",
+    tickers: ["UPS", "FDX", "DAL", "AAL"],
+  },
+  {
+    title: "Real Estate",
+    icon: <Building className="w-6 h-6" />,
+    color: "from-rose-500 to-pink-500",
+    tickers: ["AMT", "PLD", "SPG", "DLR"],
+  },
+  {
+    title: "Materials",
+    icon: <Globe className="w-6 h-6" />,
+    color: "from-green-500 to-lime-500",
+    tickers: ["LIN", "BHP", "RIO", "NEM"],
+  },
+  {
+    title: "Aerospace & Defense",
+    icon: <Bolt className="w-6 h-6" />,
+    color: "from-gray-500 to-slate-500",
+    tickers: ["LMT", "BA", "NOC", "RTX"],
+  },
+  {
+    title: "Pharmaceuticals",
+    icon: <Pill className="w-6 h-6" />,
+    color: "from-red-500 to-rose-500",
+    tickers: ["PFE", "MRK", "JNJ", "ABBV"],
   },
 ];
 
@@ -162,7 +163,7 @@ const HubPage = () => {
   const [loadingNews, setLoadingNews] = useState(true);
   const [loadingStocks, setLoadingStocks] = useState(true);
   const [loadingPlans, setLoadingPlans] = useState(true);
-  const [stockError, setStockError] = useState<string | null>(null);
+  const [userSectors, setUserSectors] = useState<string[]>([]);
 
   const getCookie = (name: string): string | null => {
     const value = `; ${document.cookie}`;
@@ -186,10 +187,30 @@ const HubPage = () => {
       return null;
     }
   };
+  const fetchAccountSectors = async (userId: string) => {
+    try {
+      const response = await axios.get(
+        `http://localhost:3001/sector/${userId}`
+      );
+      return response.data; // array ของ sector
+    } catch (error) {
+      console.error("Error fetching account sectors:", error);
+      return [];
+    }
+  };
 
   useEffect(() => {
     const accountData = parseAccountFromCookie();
+    if (!accountData) return;
+
     setAccount(accountData);
+
+    const userId = accountData.id;
+
+    fetchAccountSectors(userId).then((sectors) => {
+      const sectorNames = sectors.map((s: any) => s.name);
+      setUserSectors(sectorNames);
+    });
   }, []);
 
   useEffect(() => {
@@ -210,104 +231,59 @@ const HubPage = () => {
   }, []);
 
   useEffect(() => {
+    if (userSectors.length === 0) return;
+
     const fetchStocks = async () => {
       try {
         const results: { [key: string]: IStock[] } = {};
 
-        stockCategories.forEach((category) => {
+        // Filter stockCategories ที่อยู่ใน userSectors
+        const filteredCategories = stockCategories.filter((cat) =>
+          userSectors.some((s) => cat.title.includes(s))
+        );
+
+        filteredCategories.forEach((category) => {
           results[category.title] = [];
         });
 
         const allTickers = [
-          ...new Set(stockCategories.flatMap((cat) => cat.tickers)),
+          ...new Set(filteredCategories.flatMap((cat) => cat.tickers)),
         ];
-
-        console.log("Fetching stocks for tickers:", allTickers);
 
         const stockPromises = allTickers.map(async (ticker) => {
           try {
-            console.log(`Fetching data for ${ticker}...`);
-
             const response = await fetch(
-              `http://localhost:3001/stock/data?ticker=${ticker.toUpperCase()}`,
-              {
-                method: "GET",
-                headers: {
-                  "Content-Type": "application/json",
-                },
-              }
+              `http://localhost:3001/stock/data?ticker=${ticker.toUpperCase()}`
             );
-
-            if (!response.ok) {
-              throw new Error(`HTTP error! status: ${response.status}`);
-            }
-
             const result = await response.json();
-            console.log(`Data received for ${ticker}:`, result);
-
-            if (result.success && result.data) {
-              const stockData = result.data;
-              return {
-                ticker: stockData.ticker,
-                name: stockData.name || ticker,
-                price: stockData.price || 0,
-                change: stockData.change || 0,
-                changePercent: stockData.changePercent || 0,
-                open: stockData.open,
-                high: stockData.high,
-                low: stockData.low,
-                volume: stockData.volume,
-                market_cap: stockData.market_cap,
-                sector: stockData.sector,
-              };
-            } else {
-              throw new Error(result.message || `No data for ${ticker}`);
-            }
-          } catch (error) {
-            console.error(`Error fetching ${ticker}:`, error);
+            if (result.success && result.data) return result.data;
+            return null;
+          } catch {
             return null;
           }
         });
 
-        const stockData = await Promise.all(stockPromises);
-        console.log("All stock data:", stockData);
-
-        const validStocks = stockData.filter(
-          (stock) => stock !== null
+        const stockData = (await Promise.all(stockPromises)).filter(
+          (s) => s !== null
         ) as IStock[];
 
-        stockCategories.forEach((category) => {
+        filteredCategories.forEach((category) => {
           category.tickers.forEach((ticker) => {
-            const stock = validStocks.find((s) => s?.ticker === ticker);
-            if (stock) {
-              results[category.title].push(stock);
-            }
+            const stock = stockData.find((s) => s.ticker === ticker);
+            if (stock) results[category.title].push(stock);
           });
         });
 
-        console.log("Organized stock data:", results);
         setStocksByCategory(results);
-
-        const totalStocks = Object.values(results).reduce(
-          (sum, stocks) => sum + stocks.length,
-          0
-        );
-
-        if (totalStocks === 0) {
-          setStockError("ไม่สามารถโหลดข้อมูลหุ้นได้ กรุณาลองใหม่อีกครั้ง");
-        } else {
-          console.log(`Successfully loaded ${totalStocks} stocks`);
-        }
       } catch (error) {
-        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลหุ้น:", error);
-        setStockError("เกิดข้อผิดพลาดในการดึงข้อมูลหุ้น");
+        console.error(error);
       } finally {
         setLoadingStocks(false);
       }
     };
 
     fetchStocks();
-  }, []);
+  }, [userSectors]);
 
   useEffect(() => {
     const fetchRetirementPlans = async () => {
@@ -373,8 +349,8 @@ const HubPage = () => {
       GOOGL: "Alphabet",
       META: "Meta",
       ORCL: "Oracle",
-      "BRK.B": "Berkshire",
-      JPM: "JPMorgan",
+      BRKB: "Berkshire Hathaway",
+      JPM: "JPMorgan Chase",
       V: "Visa",
       MA: "Mastercard",
       LLY: "Eli Lilly",
@@ -385,6 +361,35 @@ const HubPage = () => {
       WMT: "Walmart",
       COST: "Costco",
       HD: "Home Depot",
+      PG: "Procter & Gamble",
+      KO: "Coca-Cola",
+      PEP: "PepsiCo",
+      UL: "Unilever",
+      NEE: "NextEra Energy",
+      DUK: "Duke Energy",
+      SO: "Southern Company",
+      EXC: "Exelon",
+      VZ: "Verizon",
+      T: "AT&T",
+      TMUS: "T-Mobile US",
+      CHTR: "Charter Communications",
+      UPS: "United Parcel Service",
+      FDX: "FedEx",
+      DAL: "Delta Air Lines",
+      AAL: "American Airlines",
+      AMT: "American Tower",
+      PLD: "Prologis",
+      SPG: "Simon Property Group",
+      DLR: "Digital Realty",
+      LIN: "Linde",
+      BHP: "BHP Group",
+      RIO: "Rio Tinto",
+      NEM: "Newmont",
+      LMT: "Lockheed Martin",
+      BA: "Boeing",
+      NOC: "Northrop Grumman",
+      RTX: "Raytheon Technologies",
+      PFE: "Pfizer",
     };
 
     return stockNames[stock.ticker] || stock.ticker;
@@ -425,114 +430,6 @@ const HubPage = () => {
     backgroundImage: `url("data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.02'%3E%3Ccircle cx='30' cy='30' r='2'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E")`,
     opacity: 0.5,
   };
-
-  const row1 = stockCategories.slice(0, 3);
-  const row2 = stockCategories.slice(3, 6);
-
-  const renderStockRow = (categories: IStockCategory[], rowIndex: number) => (
-    <div
-      key={rowIndex}
-      className="grid gap-8 mb-12 grid-cols-1 md:grid-cols-2 lg:grid-cols-3"
-    >
-      {categories.map((category, categoryIndex) => (
-        <div
-          key={category.title}
-          className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6 hover:border-slate-600/50 transition-all duration-300"
-          style={{
-            animationDelay: `${(rowIndex * 3 + categoryIndex) * 100}ms`,
-          }}
-        >
-          <div className="flex items-center gap-3 mb-6">
-            <div
-              className={`p-3 rounded-full bg-gradient-to-r ${category.color} bg-opacity-20`}
-            >
-              <div className="text-white">{category.icon}</div>
-            </div>
-            <h3 className="text-xl font-bold text-white">{category.title}</h3>
-          </div>
-
-          <div className="grid grid-cols-2 gap-3">
-            {stocksByCategory[category.title]?.length > 0 ? (
-              stocksByCategory[category.title].map((stock, stockIndex) => {
-                const heatmapStyle = getHeatmapColor(stock.changePercent);
-                return (
-                  <div
-                    key={stock.ticker}
-                    className="relative p-4 rounded-xl transition-all duration-300 hover:scale-105 border-2 min-h-24 cursor-pointer"
-                    onClick={() => {
-                      router.push(`/pricing?ticker=${stock.ticker}`);
-                    }}
-                    style={{
-                      backgroundColor: heatmapStyle.backgroundColor,
-                      borderColor: heatmapStyle.borderColor,
-                    }}
-                  >
-                    {/* Top Left: Company Name & Ticker */}
-                    <div className="absolute top-2 left-2">
-                      <div className="font-bold text-white text-xs leading-tight">
-                        {getStockName(stock)}
-                      </div>
-                      <div className="text-xs text-slate-400 mt-0.5">
-                        {stock.ticker}
-                      </div>
-                    </div>
-
-                    {/* Top Right: Trend Indicator */}
-                    <div className="absolute top-2 right-2">
-                      {stock.changePercent > 0 ? (
-                        <TrendingUp className="w-3 h-3 text-green-400" />
-                      ) : stock.changePercent < 0 ? (
-                        <TrendingDown className="w-3 h-3 text-red-400" />
-                      ) : (
-                        <div className="w-3 h-3 rounded-full bg-blue-400"></div>
-                      )}
-                    </div>
-
-                    {/* Bottom Left: Current Price */}
-                    <div className="absolute bottom-2 left-2">
-                      <div className="text-sm font-semibold text-slate-200">
-                        ${stock.price > 0 ? stock.price.toFixed(2) : "N/A"}
-                      </div>
-                    </div>
-
-                    {/* Bottom Right: Change */}
-                    <div className="absolute bottom-2 right-2 text-right">
-                      {stock.price > 0 && (
-                        <>
-                          <div
-                            className={`text-sm font-bold ${heatmapStyle.textColor}`}
-                          >
-                            {stock.changePercent >= 0 ? "+" : ""}
-                            {stock.changePercent.toFixed(2)}%
-                          </div>
-                          <div className={`text-xs ${heatmapStyle.textColor}`}>
-                            {stock.change >= 0 ? "+" : ""}$
-                            {stock.change.toFixed(2)}
-                          </div>
-                        </>
-                      )}
-                    </div>
-                  </div>
-                );
-              })
-            ) : (
-              <div className="col-span-2 text-center py-8">
-                {loadingStocks ? (
-                  <div className="animate-spin rounded-full h-8 w-8 border-b-2 border-blue-500 mx-auto"></div>
-                ) : (
-                  <div className="text-slate-400 text-sm">
-                    <AlertCircle className="w-6 h-6 mx-auto mb-2" />
-                    ไม่มีข้อมูล
-                  </div>
-                )}
-              </div>
-            )}
-          </div>
-        </div>
-      ))}
-    </div>
-  );
-
   return (
     <div className="min-h-screen pt-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
       {/* Background Pattern */}
@@ -550,41 +447,111 @@ const HubPage = () => {
             </p>
           </div>
 
-          {/* Stock Categories Section */}
+          {/* Stock Sectors */}
           <section className="mb-20">
-            <div className="text-center mb-12">
-              <h2 className="text-4xl font-bold text-white mb-4 flex items-center justify-center gap-3">
-                <span className="text-4xl">📈</span>
-                ตลาดหุ้น
+            <div className="flex items-center justify-center mb-6">
+              <h2 className="text-4xl font-bold text-white flex items-center gap-3">
+                <span className="text-4xl">📈</span> ตลาดหุ้น
               </h2>
-              <div className="w-24 h-1 bg-gradient-to-r from-blue-500 to-cyan-500 mx-auto rounded-full"></div>
             </div>
 
             {loadingStocks ? (
               <div className="flex justify-center">
-                <div className="text-center">
-                  <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500 mx-auto mb-4"></div>
-                  <p className="text-slate-400">กำลังโหลดข้อมูลหุ้น...</p>
-                </div>
+                <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-blue-500"></div>
               </div>
-            ) : stockError ? (
-              <div className="text-center py-12">
-                <AlertCircle className="w-16 h-16 text-red-400 mx-auto mb-4" />
-                <h3 className="text-xl font-semibold text-white mb-2">
-                  เกิดข้อผิดพลาด
-                </h3>
-                <p className="text-slate-400 mb-4">{stockError}</p>
-                <button
-                  onClick={() => window.location.reload()}
-                  className="px-6 py-3 bg-blue-500 text-white rounded-lg hover:bg-blue-600 transition-colors"
-                >
-                  ลองใหม่
-                </button>
+            ) : userSectors.length > 0 ? (
+              <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+                {userSectors.map((sectorName, idx) => {
+                  const category = stockCategories.find((c) =>
+                    c.title.includes(sectorName)
+                  );
+                  if (!category) return null;
+                  return (
+                    <div
+                      key={category.title}
+                      className="bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 rounded-2xl p-6"
+                    >
+                      <div className="flex items-center gap-3 mb-6">
+                        <div
+                          className={`p-3 rounded-full bg-gradient-to-r ${category.color} bg-opacity-20`}
+                        >
+                          <div className="text-white">{category.icon}</div>
+                        </div>
+                        <h3 className="text-xl font-bold text-white">
+                          {category.title}
+                        </h3>
+                      </div>
+
+                      <div className="grid grid-cols-2 gap-3">
+                        {stocksByCategory[category.title]?.length ? (
+                          stocksByCategory[category.title].map((stock) => (
+                            <div
+                              key={stock.ticker}
+                              className="relative p-4 rounded-xl transition-all duration-300 hover:scale-105 border-2 min-h-24 cursor-pointer"
+                              onClick={() =>
+                                router.push(`/pricing?ticker=${stock.ticker}`)
+                              }
+                              style={{
+                                ...getHeatmapColor(stock.changePercent),
+                              }}
+                            >
+                              <div className="absolute top-2 left-2">
+                                <div className="font-bold text-white text-xs leading-tight">
+                                  {getStockName(stock)}
+                                </div>
+                                <div className="text-xs text-slate-400 mt-0.5">
+                                  {stock.ticker}
+                                </div>
+                              </div>
+                              <div className="absolute top-2 right-2">
+                                {stock.changePercent > 0 ? (
+                                  <TrendingUp className="w-3 h-3 text-green-400" />
+                                ) : stock.changePercent < 0 ? (
+                                  <TrendingDown className="w-3 h-3 text-red-400" />
+                                ) : (
+                                  <div className="w-3 h-3 rounded-full bg-blue-400"></div>
+                                )}
+                              </div>
+                              <div className="absolute bottom-2 left-2 text-sm font-semibold text-slate-200">
+                                $
+                                {stock.price > 0
+                                  ? stock.price.toFixed(2)
+                                  : "N/A"}
+                              </div>
+                              <div
+                                className="absolute bottom-2 right-2 text-right text-sm font-bold"
+                                style={{
+                                  color:
+                                    stock.changePercent > 0 ? "green" : "red",
+                                }}
+                              >
+                                {stock.changePercent >= 0 ? "+" : ""}
+                                {stock.changePercent.toFixed(2)}%
+                              </div>
+                            </div>
+                          ))
+                        ) : (
+                          <div className="col-span-2 text-center py-8 text-slate-400 text-sm">
+                            ไม่มีข้อมูล
+                          </div>
+                        )}
+                      </div>
+                    </div>
+                  );
+                })}
+                {/* เพิ่มปุ่ม + เพิ่ม Sector
+                <div className="flex items-center justify-center bg-slate-800/50 border border-slate-700/50 rounded-2xl cursor-pointer hover:border-slate-600/50 transition-all duration-300">
+                  <button
+                    className="text-white text-lg font-medium"
+                    onClick={() => router.push("/sector")}
+                  >
+                    + เพิ่ม Sector
+                  </button>
+                </div> */}
               </div>
             ) : (
-              <div className="space-y-8">
-                {renderStockRow(row1, 0)}
-                {renderStockRow(row2, 1)}
+              <div className="text-center py-8 text-slate-400 text-sm">
+                คุณยังไม่ได้เลือก Sector ที่สนใจ
               </div>
             )}
           </section>

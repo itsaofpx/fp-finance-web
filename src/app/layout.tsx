@@ -12,9 +12,11 @@ export default function RootLayout({
 }) {
   const pathname = usePathname();
 
-  const isToolPath = pathname.startsWith("/tool/") || pathname.startsWith("/pricing");
+  const isToolPath = pathname.startsWith("/tool/");
+  const isPricePath = pathname.startsWith("/pricing");
+  const isGetStartedPath = pathname.startsWith("/get-started");
 
-  if (isToolPath) {
+  if (isToolPath || isPricePath || isGetStartedPath) {
     return (
       <html lang="en">
         <body>{children}</body>

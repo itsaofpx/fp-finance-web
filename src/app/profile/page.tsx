@@ -1,11 +1,13 @@
 "use client";
 import Image from "next/image";
-import React, { useEffect, useState } from "react";
+import React, { useEffect, useState, Fragment } from "react";
 import { useRouter } from "next/navigation";
 import { destroyCookie, parseCookies } from "nookies";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import axios, { AxiosError } from "axios";
+import { Dialog, Transition } from "@headlessui/react";
+import { Plus, X } from "lucide-react";
 
 interface UserData {
   id: string;
@@ -13,6 +15,11 @@ interface UserData {
   givenName: string;
   picture: string;
   googleId?: string;
+}
+
+interface ISector {
+  id: string;
+  name: string;
 }
 
 interface ErrorResponse {
@@ -40,85 +47,84 @@ export default function ProfilePage() {
   const [openBackDrop, setOpenBackDrop] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [sectors, setSectors] = useState<ISector[]>([]);
+  const [accountInterestSector, setAccountInterestSector] = useState<ISector[]>(
+    []
+  );
+  const [showSectorModal, setShowSectorModal] = useState(false);
 
   useEffect(() => {
     const fetchUserProfile = async () => {
       try {
-        // Parse cookies with error handling
         const cookies = parseCookies();
         const accessToken = cookies.accessToken;
         const accountCookie = cookies.account;
 
-        // Validate tokens
-        if (!accessToken) {
-          throw new Error("Authentication token is missing");
-        }
+        if (!accessToken) throw new Error("Authentication token is missing");
 
-        // Safely parse account cookie
         let accountData: { googleId?: string } = {};
-        try {
-          accountData = accountCookie ? JSON.parse(accountCookie) : {};
-        } catch (parseError) {
-          console.error("Failed to parse account cookie", parseError);
-          throw new Error("Invalid account information");
+        if (accountCookie) {
+          try {
+            accountData = JSON.parse(accountCookie);
+          } catch (parseError) {
+            console.error("Failed to parse account cookie", parseError);
+          }
         }
 
-        // Validate Google ID
         const googleId = accountData.googleId;
-        if (!googleId) {
-          throw new Error("Google ID is missing");
-        }
+        if (!googleId) throw new Error("Google ID is missing");
 
-        // Fetch user profile
         const res = await axios.get<UserData>(
           `http://localhost:3001/accounts/google/${googleId}`,
-          {
-            headers: {
-              Authorization: `Bearer ${accessToken}`,
-            },
-          }
+          { headers: { Authorization: `Bearer ${accessToken}` } }
         );
-
-        // Validate response data
-        if (!res.data) {
-          throw new Error("No user data received");
-        }
 
         setUserData(res.data);
 
-        // Fetch user plans
+        // fetch plans
         try {
           const plansRes = await axios.get<Plan[]>(
             `http://localhost:3001/plans/account/${res.data.id}`,
-            {
-              headers: {
-                Authorization: `Bearer ${accessToken}`,
-              },
-            }
+            { headers: { Authorization: `Bearer ${accessToken}` } }
           );
           setPlans(plansRes.data || []);
         } catch (planError) {
           console.error("Failed to fetch plans:", planError);
-          // Don't fail the whole page if plans can't be loaded
           setPlans([]);
         }
+
+        try {
+          const sectorRes = await axios.get<ISector[]>(
+            `http://localhost:3001/sector`
+          );
+          setSectors(sectorRes.data || []);
+        } catch (sectorError) {
+          console.error("Failed to fetch sectors:", sectorError);
+          setSectors([]);
+        }
+
+        try {
+          const interestRes = await axios.get<ISector[]>(
+            `http://localhost:3001/sector/${res.data.id}`
+          );
+          setAccountInterestSector(interestRes.data);
+        } catch (interestError) {
+          console.error(
+            "Failed to fetch account interest sectors:",
+            interestError
+          );
+        }
       } catch (error) {
-        // Comprehensive error handling
         if (axios.isAxiosError(error)) {
           const axiosError = error as AxiosError<ErrorResponse>;
           const errorMessage =
             axiosError.response?.data?.message ||
             axiosError.message ||
             "An unexpected error occurred";
-
           setError(errorMessage);
-          console.error("Profile fetch error:", errorMessage);
         } else if (error instanceof Error) {
           setError(error.message);
-          console.error("Profile fetch error:", error.message);
         }
-
-        // Redirect on error
         router.push("/");
       } finally {
         setLoading(false);
@@ -128,18 +134,12 @@ export default function ProfilePage() {
     fetchUserProfile();
   }, [router]);
 
-  // Logout handler with improved error handling
   const handleLogout = async () => {
     try {
       setOpenBackDrop(true);
-
-      // Clear cookies with path
-      const cookiesToRemove = ["accessToken", "refreshToken", "account"];
-      cookiesToRemove.forEach((cookie) => {
-        destroyCookie(null, cookie, { path: "/" });
-      });
-
-      // Redirect to home
+      ["accessToken", "refreshToken", "account"].forEach((cookie) =>
+        destroyCookie(null, cookie, { path: "/" })
+      );
       router.push("/");
     } catch (error) {
       console.error("Logout error:", error);
@@ -149,17 +149,37 @@ export default function ProfilePage() {
     }
   };
 
-  // Loading state
-  if (loading) {
+  const toggleSector = async (sector: ISector) => {
+    if (!userData) return;
+    let updated: ISector[];
+    if (accountInterestSector.includes(sector)) {
+      updated = accountInterestSector.filter((s) => s !== sector);
+    } else {
+      updated = [...accountInterestSector, sector];
+    }
+    setAccountInterestSector(updated);
+
+    // update backend
+    try {
+      const cookies = parseCookies();
+      const accessToken = cookies.accessToken;
+      await axios.put(
+        `http://localhost:3001/accounts/${userData.id}/sectors`,
+        { sectors: updated },
+        { headers: { Authorization: `Bearer ${accessToken}` } }
+      );
+    } catch (err) {
+      console.error("Failed to update sectors:", err);
+    }
+  };
+
+  if (loading)
     return (
       <Backdrop open={true} sx={{ zIndex: 9999, color: "#fff" }}>
         <CircularProgress color="inherit" />
       </Backdrop>
     );
-  }
-
-  // Error state
-  if (error) {
+  if (error)
     return (
       <div className="flex items-center justify-center min-h-screen bg-red-50">
         <div className="text-center p-8 bg-white rounded-xl shadow-lg">
@@ -174,24 +194,17 @@ export default function ProfilePage() {
         </div>
       </div>
     );
-  }
+  if (!userData) return null;
 
-  // No user data
-  if (!userData) {
-    return null;
-  }
-
-  // Main Profile Page Render
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
       <div className="min-h-screen pt-20 pb-20">
         <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Profile Card */}
-            <div className="lg:col-span-1">
+            <div className="lg:col-span-1 space-y-6">
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 sticky top-24">
                 <div className="flex flex-col items-center">
-                  {/* Profile Picture */}
                   <div className="relative w-32 h-32 mb-6">
                     <Image
                       src={userData.picture}
@@ -203,16 +216,12 @@ export default function ProfilePage() {
                     />
                     <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-gray-700"></div>
                   </div>
-
                   <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
                     {userData.givenName}
                   </h1>
-
                   <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Premium Member
+                    Member
                   </p>
-
-                  {/* Action Buttons */}
                   <div className="w-full space-y-3">
                     <button
                       className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 px-6 rounded-xl transition-colors"
@@ -223,11 +232,38 @@ export default function ProfilePage() {
                   </div>
                 </div>
               </div>
+
+              {/* Interested Sectors */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
+                <h3 className="text-gray-500 dark:text-gray-400 font-semibold mb-2 uppercase text-sm">
+                  Sectors I’m Interested In
+                </h3>
+                <div className="flex flex-wrap gap-2">
+                  {accountInterestSector.map((sector) => (
+                    <span
+                      key={sector.id}
+                      className="px-3 py-1 bg-emerald-100 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-full text-xs flex items-center gap-1"
+                    >
+                      {sector.name}
+                      <X
+                        className="w-3 h-3 cursor-pointer"
+                        onClick={() => toggleSector(sector)}
+                      />
+                    </span>
+                  ))}
+                  <button
+                    onClick={() => setShowSectorModal(true)}
+                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full text-xs flex items-center justify-center"
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add
+                  </button>
+                </div>
+              </div>
             </div>
 
-            {/* Right Column - Detailed Information */}
+            {/* Right Column - Details */}
             <div className="lg:col-span-2 space-y-6">
-              {/* Personal Information Card */}
+              {/* Personal Info Card */}
               <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
                 <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
                   <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
@@ -247,7 +283,6 @@ export default function ProfilePage() {
                   </div>
                   Personal Information
                 </h2>
-
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
@@ -257,7 +292,6 @@ export default function ProfilePage() {
                       {userData.givenName}
                     </p>
                   </div>
-
                   <div className="space-y-2">
                     <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
                       Email Address
@@ -354,7 +388,6 @@ export default function ProfilePage() {
                             ดูรายละเอียด →
                           </button>
                         </div>
-
                         <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
                           <div className="space-y-1">
                             <p className="text-xs text-gray-500 dark:text-gray-400">
@@ -395,17 +428,12 @@ export default function ProfilePage() {
                             </p>
                           </div>
                         </div>
-
                         <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-500">
                           <p className="text-xs text-gray-500 dark:text-gray-400">
                             สร้างเมื่อ:{" "}
                             {new Date(plan.createdAt).toLocaleDateString(
                               "th-TH",
-                              {
-                                year: "numeric",
-                                month: "long",
-                                day: "numeric",
-                              }
+                              { year: "numeric", month: "long", day: "numeric" }
                             )}
                           </p>
                         </div>
@@ -426,6 +454,73 @@ export default function ProfilePage() {
       >
         <CircularProgress color="inherit" />
       </Backdrop>
+
+      {/* Sector Modal */}
+      <Transition appear show={showSectorModal} as={Fragment}>
+        <Dialog
+          as="div"
+          className="relative z-50"
+          onClose={() => setShowSectorModal(false)}
+        >
+          <Transition.Child
+            as={Fragment}
+            enter="ease-out duration-300"
+            enterFrom="opacity-0"
+            enterTo="opacity-100"
+            leave="ease-in duration-200"
+            leaveFrom="opacity-100"
+            leaveTo="opacity-0"
+          >
+            <div className="fixed inset-0 bg-black bg-opacity-30" />
+          </Transition.Child>
+          <div className="fixed inset-0 overflow-y-auto">
+            <div className="flex min-h-full items-center justify-center p-4 text-center">
+              <Transition.Child
+                as={Fragment}
+                enter="ease-out duration-300"
+                enterFrom="opacity-0 scale-95"
+                enterTo="opacity-100 scale-100"
+                leave="ease-in duration-200"
+                leaveFrom="opacity-100 scale-100"
+                leaveTo="opacity-0 scale-95"
+              >
+                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
+                  <Dialog.Title className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
+                    Select Sectors
+                  </Dialog.Title>
+                  <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
+                    {sectors.map((sector) => {
+                      const selected = accountInterestSector.includes(sector);
+                      return (
+                        <button
+                          key={sector.id}
+                          onClick={() => toggleSector(sector)}
+                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${
+                            selected
+                              ? "bg-emerald-100 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-500"
+                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600"
+                          }`}
+                        >
+                          {sector.name}
+                        </button>
+                      );
+                    })}
+                  </div>
+                  <div className="mt-4 text-right">
+                    <button
+                      type="button"
+                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
+                      onClick={() => setShowSectorModal(false)}
+                    >
+                      Done
+                    </button>
+                  </div>
+                </Dialog.Panel>
+              </Transition.Child>
+            </div>
+          </div>
+        </Dialog>
+      </Transition>
     </div>
   );
 }

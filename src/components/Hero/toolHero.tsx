@@ -2,94 +2,114 @@
 import React, { useState } from "react";
 import Link from "next/link";
 
+interface ToolCard {
+  title: string;
+  description: string;
+  path: string;
+  icon: string;
+  tags: string[];
+}
+
+interface Category {
+  name: string;
+}
+
 export default function ToolListHero() {
-  const cards = [
+  const cards: ToolCard[] = [
     {
       title: "คำนวณค่าเฉลี่ยหุ้น",
       description: "คำนวณราคาเฉลี่ยของหุ้นเพื่อวางแผนการลงทุน",
       path: "tool/average-calculator",
       icon: "📊",
-      category: "การวิเคราะห์",
+      tags: ["การวิเคราะห์", "การคำนวณ"],
     },
     {
       title: "แบ่งเงินลงทุนกับเงินสดเก็บออม",
       description: "จัดสรรเงินระหว่างการลงทุนและการออมอย่างสมดุล",
       path: "tool/money-allocation",
       icon: "💰",
-      category: "การจัดสรร",
+      tags: ["การจัดสรร", "การวางแผน"],
     },
     {
       title: "แนวรับเบื้องต้น",
       description: "วิเคราะห์แนวรับและแนวต้านของราคาหุ้น",
       path: "tool/support",
       icon: "📈",
-      category: "การวิเคราะห์",
+      tags: ["การวิเคราะห์"],
     },
     {
       title: "คำนวณการขายต้นทุนแบบ FIFO",
       description: "คำนวณกำไรขาดทุนด้วยวิธี First In First Out",
       path: "tool/fifo-calculator",
       icon: "🔄",
-      category: "การคำนวณ",
+      tags: ["การคำนวณ"],
     },
     {
       title: "คำนวณกำไรเป้าหมาย",
       description: "กำหนดเป้าหมายกำไรและคำนวณจุดขาย",
       path: "tool/profit-target",
       icon: "🎯",
-      category: "การวางแผน",
+      tags: ["การวางแผน"],
     },
     {
       title: "คำนวณดอกเบี้ยทบต้น",
       description: "คำนวณการเติบโตของเงินด้วยดอกเบี้ยทบต้น",
       path: "tool/compound-interest",
       icon: "📈",
-      category: "การคำนวณ",
+      tags: ["การคำนวณ"],
     },
     {
       title: "คำนวณเป้าหมายเงินปันผล",
       description: "คำนวณจำนวนหุ้นที่ต้องซื้อเพื่อให้ได้เงินปันผลตามเป้าหมาย",
       path: "tool/dividend-calculator",
       icon: "💎",
-      category: "การคำนวณ",
+      tags: ["การคำนวณ"],
     },
     {
       title: "คำนวณภาษีการลงทุน",
       description: "คำนวณภาษีจากกำไรการลงทุนและการซื้อขาย",
       path: "tool/tax-calculator",
       icon: "🧾",
-      category: "การคำนวณ",
+      tags: ["การคำนวณ"],
     },
     {
       title: "คำนวณ Stop Loss & Take Profit",
       description: "กำหนดจุดตัดขาดทุนและเก็บกำไรอย่างมีระบบ",
       path: "tool/stop-loss",
       icon: "🛡️",
-      category: "การจัดการความเสี่ยง",
+      tags: ["การจัดการความเสี่ยง"],
     },
     {
       title: "คำนวณ Emergency Fund",
       description: "คำนวณเงินสำรองฉุกเฉินที่เหมาะสมกับรายได้",
       path: "tool/emergency-fund",
       icon: "🆘",
-      category: "การวางแผน",
+      tags: ["การวางแผน"],
     },
   ];
 
-  const categories = [
-    "ทั้งหมด",
-    "การวิเคราะห์",
-    "การจัดสรร",
-    "การคำนวณ",
-    "การวางแผน",
-    "การจัดการความเสี่ยง",
+  const allTags: Category[] = [
+    { name: "การวิเคราะห์" },
+    { name: "การจัดสรร" },
+    { name: "การคำนวณ" },
+    { name: "การวางแผน" },
+    { name: "การจัดการความเสี่ยง" },
   ];
-  const [selectedCategory, setSelectedCategory] = useState("ทั้งหมด");
+
+  const [selectedTags, setSelectedTags] = useState<string[]>([]);
+
+  const toggleTag = (tag: string) => {
+    setSelectedTags((prev) =>
+      prev.includes(tag) ? prev.filter((t) => t !== tag) : [...prev, tag]
+    );
+  };
 
   const filteredCards =
-    selectedCategory === "ทั้งหมด"
+    selectedTags.length === 0
       ? cards
-      : cards.filter((card) => card.category === selectedCategory);
+      : cards.filter((card) =>
+          card.tags.some((tag) => selectedTags.includes(tag))
+        );
 
   return (
     <section className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900">
@@ -97,11 +117,6 @@ export default function ToolListHero() {
         <div className="flex flex-col items-center text-center max-w-7xl mx-auto">
           {/* Hero Section */}
           <div className="text-center mb-16 mt-20">
-            <div className="inline-flex items-center px-4 py-2 bg-gray-800 rounded-full border border-gray-700 mb-6">
-              <span className="text-gray-300 text-sm font-medium">
-                เครื่องมือการเงินครบครัน
-              </span>
-            </div>
             <h1 className="text-5xl md:text-6xl font-bold text-white mb-6 leading-tight">
               เครื่องมือการลงทุน
               <span className="block text-gray-400 text-3xl md:text-4xl font-normal mt-2">
@@ -114,19 +129,19 @@ export default function ToolListHero() {
             </p>
           </div>
 
-          {/* Category Filter */}
+          {/* Tag Filter */}
           <div className="flex flex-wrap justify-center gap-3 mb-12">
-            {categories.map((category) => (
+            {allTags.map((tag) => (
               <button
-                key={category}
-                onClick={() => setSelectedCategory(category)}
+                key={tag.name}
+                onClick={() => toggleTag(tag.name)}
                 className={`px-6 py-3 rounded-full text-sm font-medium transition-all duration-300 ${
-                  selectedCategory === category
+                  selectedTags.includes(tag.name)
                     ? "bg-white text-gray-900 shadow-lg"
                     : "bg-gray-800/50 text-gray-300 hover:bg-gray-700/50 hover:text-white border border-gray-700/50"
                 }`}
               >
-                {category}
+                {tag.name}
               </button>
             ))}
           </div>
@@ -136,26 +151,35 @@ export default function ToolListHero() {
             {filteredCards.map((card, index) => (
               <Link key={index} href={card.path} className="group block">
                 <div className="bg-gray-800/50 backdrop-blur-sm rounded-2xl border border-gray-700/50 hover:border-gray-600/50 transition-all duration-500 overflow-hidden group-hover:bg-gray-800/70 transform hover:-translate-y-2 hover:shadow-2xl hover:shadow-gray-900/20 h-full">
-                  {/* Category Badge */}
+                  {/* Category Badges */}
                   <div className="p-6 pb-4">
-                    <div className="flex items-center justify-between mb-4">
-                      <span className="px-3 py-1 bg-gray-700/50 text-gray-300 text-xs font-medium rounded-full">
-                        {card.category}
-                      </span>
-                      <div className="w-8 h-8 bg-gray-700/30 rounded-full flex items-center justify-center group-hover:bg-gray-600/50 transition-all duration-300">
-                        <svg
-                          className="w-4 h-4 text-gray-400 transform group-hover:translate-x-1 group-hover:text-gray-300 transition-all duration-300"
-                          fill="none"
-                          stroke="currentColor"
-                          viewBox="0 0 24 24"
-                        >
-                          <path
-                            strokeLinecap="round"
-                            strokeLinejoin="round"
-                            strokeWidth={2}
-                            d="M9 5l7 7-7 7"
-                          />
-                        </svg>
+                    <div className="flex justify-between">
+                      <div className="flex flex-wrap gap-2 mb-4">
+                        {card.tags.map((tag, idx) => (
+                          <span
+                            key={idx}
+                            className="px-3 py-2 bg-gray-700/50 text-gray-300 text-xs font-medium rounded-full"
+                          >
+                            {tag}
+                          </span>
+                        ))}
+                      </div>
+                      <div className="flex items-center justify-between mb-4">
+                        <div className="w-8 h-8 bg-gray-700/30 rounded-full flex items-center justify-center group-hover:bg-gray-600/50 transition-all duration-300">
+                          <svg
+                            className="w-4 h-4 text-gray-400 transform group-hover:translate-x-1 group-hover:text-gray-300 transition-all duration-300"
+                            fill="none"
+                            stroke="currentColor"
+                            viewBox="0 0 24 24"
+                          >
+                            <path
+                              strokeLinecap="round"
+                              strokeLinejoin="round"
+                              strokeWidth={2}
+                              d="M9 5l7 7-7 7"
+                            />
+                          </svg>
+                        </div>
                       </div>
                     </div>
 
