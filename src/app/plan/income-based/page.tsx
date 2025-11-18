@@ -59,6 +59,7 @@ export default function IncomePlanPage() {
   const [savedPlans, setSavedPlans] = useState<RetirementPlan[]>([]);
   const [id, setId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [currentPlan, setCurrentPlan] = useState<string>("");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -179,7 +180,7 @@ export default function IncomePlanPage() {
         return;
       }
 
-      const newPlan = {
+      const planData = {
         accountId: id,
         name: planName,
         currentAge,
@@ -192,31 +193,70 @@ export default function IncomePlanPage() {
         planType: "ib",
       };
 
-      const response = await axios.post(
-        "http://localhost:3001/plans",
-        newPlan,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // ตรวจสอบว่าเป็นการอัปเดตหรือสร้างใหม่
+      if (currentPlan) {
+        console.log(currentPlan);
+        // อัปเดตแผนที่มีอยู่
+        const response = await axios.patch(
+          `http://localhost:3001/plans/${currentPlan}`,
+          planData,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-      const savedPlan = response.data;
-      savedPlan.monthlyExpenses = savedPlan.money;
-      setSavedPlans((prevPlans) => [...prevPlans, savedPlan]);
+        const updatedPlan = response.data;
+        updatedPlan.monthlyExpenses = updatedPlan.money;
+
+        // อัปเดตรายการแผนที่บันทึก
+        setSavedPlans((prevPlans) =>
+          prevPlans.map((plan) =>
+            plan.id === currentPlan ? updatedPlan : plan
+          )
+        );
+
+        setSnackbar({
+          open: true,
+          message: "อัปเดตแผนสำเร็จ!",
+          severity: "success",
+        });
+      } else {
+        // สร้างแผนใหม่
+        const response = await axios.post(
+          "http://localhost:3001/plans",
+          planData,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const savedPlan = response.data;
+        savedPlan.monthlyExpenses = savedPlan.money;
+        setSavedPlans((prevPlans) => [...prevPlans, savedPlan]);
+
+        setSnackbar({
+          open: true,
+          message: "บันทึกแผนสำเร็จ!",
+          severity: "success",
+        });
+      }
+
+      // ล้างชื่อแผนและ currentPlan หลังบันทึกสำเร็จ
       setPlanName("");
-      setSnackbar({
-        open: true,
-        message: "บันทึกแผนสำเร็จ!",
-        severity: "success",
-      });
+      setCurrentPlan("");
     } catch (error) {
       console.error("Error saving plan:", error);
       setSnackbar({
         open: true,
-        message: "เกิดข้อผิดพลาดในการบันทึกแผน",
+        message: currentPlan
+          ? "เกิดข้อผิดพลาดในการอัปเดตแผน"
+          : "เกิดข้อผิดพลาดในการบันทึกแผน",
         severity: "error",
       });
     } finally {
@@ -233,6 +273,7 @@ export default function IncomePlanPage() {
     setInflationRate(plan.inflationRate);
     setRetirementYears(plan.retirementYears);
     setPlanName(plan.name);
+    setCurrentPlan(plan.id)
   };
 
   const deletePlan = (planId: string) => {
@@ -301,6 +342,7 @@ export default function IncomePlanPage() {
     setInflationRate(3);
     setRetirementYears(25);
     setPlanName("");
+    setCurrentPlan("");
   };
 
   const calculateRetirement = () => {
@@ -719,7 +761,13 @@ export default function IncomePlanPage() {
                     disabled={loading}
                     className="w-full px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? "กำลังบันทึก..." : "💾 บันทึกแผน"}
+                    {loading
+                      ? currentPlan
+                        ? "กำลังอัปเดต..."
+                        : "กำลังบันทึก..."
+                      : currentPlan
+                      ? "💾 อัปเดตแผน"
+                      : "💾 บันทึกแผน"}
                   </button>
                 </div>
               </div>

@@ -63,6 +63,7 @@ export default function GoalPlanPage() {
   const [savedPlans, setSavedPlans] = useState<RetirementPlan[]>([]);
   const [id, setId] = useState<string>("");
   const [loading, setLoading] = useState<boolean>(false);
+  const [currentPlan, setCurrentPlan] = useState<string>("");
   const [snackbar, setSnackbar] = useState({
     open: false,
     message: "",
@@ -179,7 +180,7 @@ export default function GoalPlanPage() {
         return;
       }
 
-      const newPlan = {
+      const planData = {
         accountId: id,
         name: planName,
         currentAge,
@@ -193,31 +194,69 @@ export default function GoalPlanPage() {
         planType: "gb",
       };
 
-      const response = await axios.post(
-        "http://localhost:3001/plans",
-        newPlan,
-        {
-          headers: {
-            Authorization: `Bearer ${accessToken}`,
-            "Content-Type": "application/json",
-          },
-        }
-      );
+      // ตรวจสอบว่าเป็นการอัปเดตหรือสร้างใหม่
+      if (currentPlan) {
+        // อัปเดตแผนที่มีอยู่
+        const response = await axios.patch(
+          `http://localhost:3001/plans/${currentPlan}`,
+          planData,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
 
-      const savedPlan = response.data;
-      savedPlan.targetLumpSum = savedPlan.money;
-      setSavedPlans((prevPlans) => [...prevPlans, savedPlan]);
+        const updatedPlan = response.data;
+        updatedPlan.targetLumpSum = updatedPlan.money;
+
+        // อัปเดตรายการแผนที่บันทึก
+        setSavedPlans((prevPlans) =>
+          prevPlans.map((plan) =>
+            plan.id === currentPlan ? updatedPlan : plan
+          )
+        );
+
+        setSnackbar({
+          open: true,
+          message: "อัปเดตแผนสำเร็จ!",
+          severity: "success",
+        });
+      } else {
+        // สร้างแผนใหม่
+        const response = await axios.post(
+          "http://localhost:3001/plans",
+          planData,
+          {
+            headers: {
+              Authorization: `Bearer ${accessToken}`,
+              "Content-Type": "application/json",
+            },
+          }
+        );
+
+        const savedPlan = response.data;
+        savedPlan.targetLumpSum = savedPlan.money;
+        setSavedPlans((prevPlans) => [...prevPlans, savedPlan]);
+
+        setSnackbar({
+          open: true,
+          message: "บันทึกแผนสำเร็จ!",
+          severity: "success",
+        });
+      }
+
+      // ล้างชื่อแผนและ currentPlan หลังบันทึกสำเร็จ
       setPlanName("");
-      setSnackbar({
-        open: true,
-        message: "บันทึกแผนสำเร็จ!",
-        severity: "success",
-      });
+      setCurrentPlan("");
     } catch (error) {
       console.error("Error saving plan:", error);
       setSnackbar({
         open: true,
-        message: "เกิดข้อผิดพลาดในการบันทึกแผน",
+        message: currentPlan
+          ? "เกิดข้อผิดพลาดในการอัปเดตแผน"
+          : "เกิดข้อผิดพลาดในการบันทึกแผน",
         severity: "error",
       });
     } finally {
@@ -234,6 +273,7 @@ export default function GoalPlanPage() {
     setInflationRate(plan.inflationRate);
     setRetirementYears(plan.retirementYears);
     setPlanName(plan.name);
+    setCurrentPlan(plan.id);
   };
 
   const deletePlan = (planId: string) => {
@@ -302,6 +342,7 @@ export default function GoalPlanPage() {
     setInflationRate(3);
     setRetirementYears(25);
     setPlanName("");
+    setCurrentPlan("");
   };
 
   // ===== Calculations (Lump Sum Goal) =====
@@ -614,7 +655,13 @@ export default function GoalPlanPage() {
                     disabled={loading}
                     className="w-full px-5 py-3 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium disabled:opacity-50 disabled:cursor-not-allowed"
                   >
-                    {loading ? "กำลังบันทึก..." : "💾 บันทึกแผน"}
+                    {loading
+                      ? currentPlan
+                        ? "กำลังอัปเดต..."
+                        : "กำลังบันทึก..."
+                      : currentPlan
+                      ? "💾 อัปเดตแผน"
+                      : "💾 บันทึกแผน"}
                   </button>
                 </div>
               </div>
@@ -630,7 +677,7 @@ export default function GoalPlanPage() {
                   <div className="bg-blue-50 dark:bg-blue-900/20 p-3.5 rounded-lg border border-blue-200/50 dark:border-blue-800/50">
                     <div className="flex items-center justify-between">
                       <div>
-                        <div className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">⏰ ปีที่เหลือก</div>
+                        <div className="text-xs font-medium text-blue-700 dark:text-blue-400 mb-1">⏰ ปีที่เหลือ</div>
                         <div className="text-2xl font-bold text-blue-800 dark:text-blue-300">{results.yearsToRetirement} <span className="text-base">ปี</span></div>
                       </div>
                       <div className="w-14 h-14 bg-blue-600 rounded-xl flex items-center justify-center text-2xl shadow-sm">⏳</div>

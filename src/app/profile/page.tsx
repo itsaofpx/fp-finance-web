@@ -19,9 +19,24 @@ interface ErrorResponse {
   message: string;
 }
 
+interface Plan {
+  id: string;
+  name: string;
+  planType: string;
+  currentAge: number;
+  retirementAge: number;
+  money: number;
+  currentSavings: number;
+  expectedReturn: number;
+  inflationRate: number;
+  retirementYears: number;
+  createdAt: string;
+}
+
 export default function ProfilePage() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
+  const [plans, setPlans] = useState<Plan[]>([]);
   const [openBackDrop, setOpenBackDrop] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
@@ -70,6 +85,23 @@ export default function ProfilePage() {
         }
 
         setUserData(res.data);
+
+        // Fetch user plans
+        try {
+          const plansRes = await axios.get<Plan[]>(
+            `http://localhost:3001/plans/account/${res.data.id}`,
+            {
+              headers: {
+                Authorization: `Bearer ${accessToken}`,
+              },
+            }
+          );
+          setPlans(plansRes.data || []);
+        } catch (planError) {
+          console.error("Failed to fetch plans:", planError);
+          // Don't fail the whole page if plans can't be loaded
+          setPlans([]);
+        }
       } catch (error) {
         // Comprehensive error handling
         if (axios.isAxiosError(error)) {
@@ -235,6 +267,152 @@ export default function ProfilePage() {
                     </p>
                   </div>
                 </div>
+              </div>
+
+              {/* My Plans Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                  <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center mr-3">
+                    <svg
+                      className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
+                      fill="none"
+                      stroke="currentColor"
+                      viewBox="0 0 24 24"
+                    >
+                      <path
+                        strokeLinecap="round"
+                        strokeLinejoin="round"
+                        strokeWidth="2"
+                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
+                      />
+                    </svg>
+                  </div>
+                  My Financial Plans
+                  <span className="ml-auto text-sm bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full">
+                    {plans.length} {plans.length === 1 ? "Plan" : "Plans"}
+                  </span>
+                </h2>
+
+                {plans.length === 0 ? (
+                  <div className="text-center py-12">
+                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
+                      <span className="text-3xl">📋</span>
+                    </div>
+                    <p className="text-gray-500 dark:text-gray-400 mb-4">
+                      คุณยังไม่มีแผนการเงิน
+                    </p>
+                    <button
+                      onClick={() => router.push("/plan")}
+                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
+                    >
+                      สร้างแผนแรกของคุณ
+                    </button>
+                  </div>
+                ) : (
+                  <div className="space-y-4">
+                    {plans.map((plan) => (
+                      <div
+                        key={plan.id}
+                        className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-5 hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-600"
+                      >
+                        <div className="flex items-start justify-between mb-3">
+                          <div className="flex items-center gap-3">
+                            <div
+                              className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                                plan.planType === "ib"
+                                  ? "bg-blue-100 dark:bg-blue-900"
+                                  : "bg-purple-100 dark:bg-purple-900"
+                              }`}
+                            >
+                              <span className="text-xl">
+                                {plan.planType === "ib" ? "💰" : "🎯"}
+                              </span>
+                            </div>
+                            <div>
+                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
+                                {plan.name}
+                              </h3>
+                              <p className="text-xs text-gray-500 dark:text-gray-400">
+                                {plan.planType === "ib"
+                                  ? "แผนตามรายได้"
+                                  : "แผนตามเป้าหมาย"}
+                              </p>
+                            </div>
+                          </div>
+                          <button
+                            onClick={() =>
+                              router.push(
+                                `/plan/${
+                                  plan.planType === "ib"
+                                    ? "income-based"
+                                    : "goal-based"
+                                }`
+                              )
+                            }
+                            className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 text-sm font-medium"
+                          >
+                            ดูรายละเอียด →
+                          </button>
+                        </div>
+
+                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+                          <div className="space-y-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              อายุปัจจุบัน
+                            </p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {plan.currentAge} ปี
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              อายุเป้าหมาย
+                            </p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {plan.retirementAge} ปี
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              เงินออมปัจจุบัน
+                            </p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              ฿
+                              {new Intl.NumberFormat("th-TH").format(
+                                plan.currentSavings
+                              )}
+                            </p>
+                          </div>
+                          <div className="space-y-1">
+                            <p className="text-xs text-gray-500 dark:text-gray-400">
+                              ผลตอบแทน
+                            </p>
+                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
+                              {parseFloat(
+                                plan.expectedReturn.toString()
+                              ).toFixed(2)}
+                              % / ปี
+                            </p>
+                          </div>
+                        </div>
+
+                        <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-500">
+                          <p className="text-xs text-gray-500 dark:text-gray-400">
+                            สร้างเมื่อ:{" "}
+                            {new Date(plan.createdAt).toLocaleDateString(
+                              "th-TH",
+                              {
+                                year: "numeric",
+                                month: "long",
+                                day: "numeric",
+                              }
+                            )}
+                          </p>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                )}
               </div>
             </div>
           </div>
