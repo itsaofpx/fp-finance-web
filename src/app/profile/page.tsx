@@ -1,6 +1,6 @@
 "use client";
 import Image from "next/image";
-import React, { useEffect, useState, Fragment } from "react";
+import React, { useEffect, useState, Fragment, SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
 import { destroyCookie, parseCookies } from "nookies";
 import Backdrop from "@mui/material/Backdrop";
@@ -8,6 +8,8 @@ import CircularProgress from "@mui/material/CircularProgress";
 import axios, { AxiosError } from "axios";
 import { Dialog, Transition } from "@headlessui/react";
 import { Plus, X } from "lucide-react";
+import Snackbar, { SnackbarCloseReason } from "@mui/material/Snackbar";
+import { Alert } from "@mui/material";
 
 interface UserData {
   id: string;
@@ -20,6 +22,7 @@ interface UserData {
 interface ISector {
   id: string;
   name: string;
+  owned: boolean;
 }
 
 interface ErrorResponse {
@@ -51,6 +54,7 @@ export default function ProfilePage() {
   const [accountInterestSector, setAccountInterestSector] = useState<ISector[]>(
     []
   );
+  const [openSnackAlert, setOpenSnackAlert] = useState(false);
   const [showSectorModal, setShowSectorModal] = useState(false);
 
   useEffect(() => {
@@ -81,11 +85,9 @@ export default function ProfilePage() {
 
         setUserData(res.data);
 
-        // fetch plans
         try {
           const plansRes = await axios.get<Plan[]>(
-            `http://localhost:3001/plans/account/${res.data.id}`,
-            { headers: { Authorization: `Bearer ${accessToken}` } }
+            `http://localhost:3001/plans/account/${res.data.id}`
           );
           setPlans(plansRes.data || []);
         } catch (planError) {
@@ -94,25 +96,18 @@ export default function ProfilePage() {
         }
 
         try {
+          const accountId = res.data.id;
           const sectorRes = await axios.get<ISector[]>(
-            `http://localhost:3001/sector`
+            `http://localhost:3001/sector?accountId=${accountId}`
           );
+          const interestSectors = sectorRes.data.filter(
+            (sector) => sector.owned
+          );
+          setAccountInterestSector(interestSectors);
           setSectors(sectorRes.data || []);
         } catch (sectorError) {
           console.error("Failed to fetch sectors:", sectorError);
           setSectors([]);
-        }
-
-        try {
-          const interestRes = await axios.get<ISector[]>(
-            `http://localhost:3001/sector/${res.data.id}`
-          );
-          setAccountInterestSector(interestRes.data);
-        } catch (interestError) {
-          console.error(
-            "Failed to fetch account interest sectors:",
-            interestError
-          );
         }
       } catch (error) {
         if (axios.isAxiosError(error)) {
@@ -151,26 +146,41 @@ export default function ProfilePage() {
 
   const toggleSector = async (sector: ISector) => {
     if (!userData) return;
+
+    const isSelected = accountInterestSector.some((s) => s.id === sector.id);
+
+    if (isSelected && accountInterestSector.length <= 3) {
+      setOpenSnackAlert(true);
+      return;
+    }
+
     let updated: ISector[];
-    if (accountInterestSector.includes(sector)) {
-      updated = accountInterestSector.filter((s) => s !== sector);
+
+    if (isSelected) {
+      updated = accountInterestSector.filter((s) => s.id !== sector.id);
     } else {
       updated = [...accountInterestSector, sector];
     }
+
     setAccountInterestSector(updated);
 
-    // update backend
     try {
-      const cookies = parseCookies();
-      const accessToken = cookies.accessToken;
-      await axios.put(
-        `http://localhost:3001/accounts/${userData.id}/sectors`,
-        { sectors: updated },
-        { headers: { Authorization: `Bearer ${accessToken}` } }
-      );
+      await axios.patch(`http://localhost:3001/sector/${userData.id}`, {
+        sectors: updated.map((s) => s.id),
+      });
     } catch (err) {
       console.error("Failed to update sectors:", err);
     }
+  };
+
+  const handleCloseSnackAlert = (
+    event: SyntheticEvent | Event,
+    reason?: SnackbarCloseReason
+  ) => {
+    if (reason === "clickaway") {
+      return;
+    }
+    setOpenSnackAlert(false);
   };
 
   if (loading)
@@ -203,7 +213,7 @@ export default function ProfilePage() {
           <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
             {/* Left Column - Profile Card */}
             <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 sticky top-24">
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 top-24">
                 <div className="flex flex-col items-center">
                   <div className="relative w-32 h-32 mb-6">
                     <Image
@@ -230,33 +240,6 @@ export default function ProfilePage() {
                       Log Out
                     </button>
                   </div>
-                </div>
-              </div>
-
-              {/* Interested Sectors */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-6">
-                <h3 className="text-gray-500 dark:text-gray-400 font-semibold mb-2 uppercase text-sm">
-                  Sectors I’m Interested In
-                </h3>
-                <div className="flex flex-wrap gap-2">
-                  {accountInterestSector.map((sector) => (
-                    <span
-                      key={sector.id}
-                      className="px-3 py-1 bg-emerald-100 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-full text-xs flex items-center gap-1"
-                    >
-                      {sector.name}
-                      <X
-                        className="w-3 h-3 cursor-pointer"
-                        onClick={() => toggleSector(sector)}
-                      />
-                    </span>
-                  ))}
-                  <button
-                    onClick={() => setShowSectorModal(true)}
-                    className="px-3 py-1 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full text-xs flex items-center justify-center"
-                  >
-                    <Plus className="w-3 h-3 mr-1" /> Add
-                  </button>
                 </div>
               </div>
             </div>
@@ -300,6 +283,36 @@ export default function ProfilePage() {
                       {userData.email}
                     </p>
                   </div>
+                </div>
+              </div>
+
+              {/* Interested Sectors Card */}
+              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
+                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
+                  <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center mr-3">
+                    <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
+                  </div>
+                  Sectors I’m Interested In
+                </h2>
+                <div className="flex flex-wrap gap-2">
+                  {accountInterestSector.map((sector) => (
+                    <span
+                      key={sector.id}
+                      className="px-4 py-2 bg-emerald-100 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-full text-sm flex items-center gap-1"
+                    >
+                      {sector.name}
+                      <X
+                        className="w-3 h-3 cursor-pointer"
+                        onClick={() => toggleSector(sector)}
+                      />
+                    </span>
+                  ))}
+                  <button
+                    onClick={() => setShowSectorModal(true)}
+                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full text-sm flex items-center justify-center"
+                  >
+                    <Plus className="w-3 h-3 mr-1" /> Add
+                  </button>
                 </div>
               </div>
 
@@ -454,6 +467,22 @@ export default function ProfilePage() {
       >
         <CircularProgress color="inherit" />
       </Backdrop>
+
+      <Snackbar
+        anchorOrigin={{ vertical: "top", horizontal: "right" }}
+        autoHideDuration={3000}
+        open={openSnackAlert}
+        onClose={handleCloseSnackAlert}
+        key={"topright"}
+      >
+        <Alert
+          onClose={handleCloseSnackAlert}
+          severity="error"
+          sx={{ width: "100%" }}
+        >
+          ไม่สามารถเลือกต่ำกว่า 3 เซคเตอร์ได้!
+        </Alert>
+      </Snackbar>
 
       {/* Sector Modal */}
       <Transition appear show={showSectorModal} as={Fragment}>

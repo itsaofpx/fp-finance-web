@@ -3,7 +3,7 @@ import { usePathname } from "next/navigation";
 import NavBar from "@/components/NavBar/page";
 import Footer from "@/components/Footer/landingFooter";
 import "@/styles/globals.css";
-import DisclaimerFooter from "@/components/Footer/disclaimerFooter";
+import ToolLayout from "@/components/Sidebar/toolSidebar";
 
 export default function RootLayout({
   children,
@@ -16,10 +16,21 @@ export default function RootLayout({
   const isPricePath = pathname.startsWith("/pricing");
   const isGetStartedPath = pathname.startsWith("/get-started");
 
-  if (isToolPath || isPricePath || isGetStartedPath) {
+  if (isPricePath || isGetStartedPath) {
     return (
       <html lang="en">
         <body>{children}</body>
+      </html>
+    );
+  }
+
+  if (isToolPath) {
+    const toolName = pathname.replace("/tool/", "");
+    return (
+      <html lang="en">
+        <body>
+          <ToolLayout toolName={toolName}>{children}</ToolLayout>
+        </body>
       </html>
     );
   }

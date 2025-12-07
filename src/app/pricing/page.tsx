@@ -1010,7 +1010,7 @@ const StockPricingPage = () => {
                             {item.label}
                           </span>
                         </div>
-                        <span className="font-medium text-white text-right text-sm max-w-32">
+                        <span className="font-medium text-white text-right text-sm truncate">
                           {item.value}
                         </span>
                       </div>
@@ -1024,7 +1024,7 @@ const StockPricingPage = () => {
                         href={stockData.website || "#"}
                         target="_blank"
                         rel="noopener noreferrer"
-                        className="hover:text-blue-400 flex items-center gap-1 font-medium text-sm max-w-32 truncate text-white"
+                        className="hover:text-blue-400 flex items-center gap-1 font-medium text-sm truncate text-white"
                       >
                         {stockData.website
                           ?.replace("https://", "")
@@ -1047,15 +1047,7 @@ const StockPricingPage = () => {
                     เกี่ยวกับบริษัท
                   </h3>
                   <div className="text-sm text-slate-300 leading-relaxed">
-                    {stockData.description?.substring(0, 250) ||
-                      `${
-                        stockData.name
-                      } เป็นบริษัทชั้นนำในภาคธุรกิจ${translateSector(
-                        stockData.sector
-                      )} ที่ให้บริการและโซลูชันนวัตกรรมแก่ลูกค้าทั่วโลก`}
-                    {stockData.description &&
-                      stockData.description.length > 250 &&
-                      "..."}
+                    {stockData.description?.substring(0, 500) || "ไม่มีข้อมูล"}
                   </div>
                 </div>
               </div>
@@ -1122,47 +1114,6 @@ const StockPricingPage = () => {
                   <h3 className="text-4xl font-bold text-white mb-8">
                     แพลตฟอร์มวิเคราะห์หุ้นมืออาชีพ
                   </h3>
-                  <p className="text-xl text-slate-300 mb-8">
-                    กำลังโหลดข้อมูล NVDA...
-                  </p>
-                  <div className="grid grid-cols-2 lg:grid-cols-4 gap-8 text-left">
-                    {[
-                      {
-                        icon: Activity,
-                        label: "กราฟเรียลไทม์",
-                        color: "bg-blue-600",
-                      },
-                      {
-                        icon: Bot,
-                        label: "วิเคราะห์ด้วย AI",
-                        color: "bg-purple-600",
-                      },
-                      {
-                        icon: Volume2,
-                        label: "วิเคราะห์ปริมาณ",
-                        color: "bg-green-600",
-                      },
-                      {
-                        icon: Calendar,
-                        label: "หลายช่วงเวลา",
-                        color: "bg-orange-600",
-                      },
-                    ].map((feature, index) => (
-                      <div
-                        key={index}
-                        className="flex flex-col items-center gap-4 p-6 bg-slate-800/30 rounded-2xl border border-slate-700 hover:bg-slate-800/50 transition-all duration-200"
-                      >
-                        <div
-                          className={`p-4 ${feature.color} rounded-2xl shadow-xl`}
-                        >
-                          <feature.icon className="w-8 h-8 text-white" />
-                        </div>
-                        <span className="text-slate-200 font-medium text-lg">
-                          {feature.label}
-                        </span>
-                      </div>
-                    ))}
-                  </div>
                 </div>
               </div>
             </div>
