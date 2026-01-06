@@ -28,6 +28,9 @@ import {
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import axios from "axios";
+import FeaturedArticleComponent, {
+  AINewsArticle,
+} from "@/components/Article/featuredArticle";
 
 const tools: ITool[] = [
   {
@@ -155,6 +158,11 @@ const stockCategories: IStockCategory[] = [
 const HubPage = () => {
   const router = useRouter();
   const [news, setNews] = useState<INewsArticle[]>([]);
+  const [featuredArticle, setFeaturedArticle] = useState<AINewsArticle | null>(
+    null
+  ); // NEW
+  const [featuredLoading, setFeaturedLoading] = useState(true); // NEW
+  const [featuredError, setFeaturedError] = useState<string | null>(null); // NEW
   const [stocksByCategory, setStocksByCategory] = useState<{
     [key: string]: IStock[];
   }>({});
@@ -227,6 +235,30 @@ const HubPage = () => {
         setLoadingNews(false);
       }
     };
+
+    const fetchFeaturedArticle = async () => {
+      // NEW
+      try {
+        setFeaturedLoading(true);
+        setFeaturedError(null);
+        const response = await axios.get<AINewsArticle>(
+          "http://localhost:3002/news/prompt/latest"
+        );
+        if (!response.data.content) {
+          throw new Error("ไม่พบเนื้อหาบทความ");
+        }
+        setFeaturedArticle(response.data);
+      } catch (err) {
+        console.error("Error fetching featured article:", err);
+        setFeaturedError(
+          err instanceof Error ? err.message : "ไม่สามารถโหลดบทความเด่นได้"
+        );
+      } finally {
+        setFeaturedLoading(false);
+      }
+    };
+
+    fetchFeaturedArticle();
     fetchNews();
   }, []);
 
@@ -564,6 +596,36 @@ const HubPage = () => {
                 ข่าวตลาดล่าสุด
               </h2>
               <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full"></div>
+            </div>
+
+            <div className="mt-12 mb-12">
+              <FeaturedArticleComponent
+                featuredArticle={featuredArticle}
+                featuredLoading={featuredLoading}
+                featuredError={featuredError}
+                onRetry={() => {
+                  setFeaturedLoading(true);
+                  setFeaturedError(null);
+                  axios
+                    .get<AINewsArticle>(
+                      "http://localhost:3002/news/prompt/latest"
+                    )
+                    .then((response) => {
+                      if (!response.data.content) {
+                        throw new Error("ไม่พบเนื้อหาบทความ");
+                      }
+                      setFeaturedArticle(response.data);
+                    })
+                    .catch((err) =>
+                      setFeaturedError(
+                        err instanceof Error
+                          ? err.message
+                          : "ไม่สามารถโหลดบทความเด่นได้"
+                      )
+                    )
+                    .finally(() => setFeaturedLoading(false));
+                }}
+              />
             </div>
 
             {loadingNews ? (
