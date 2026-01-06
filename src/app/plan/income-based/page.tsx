@@ -273,7 +273,7 @@ export default function IncomePlanPage() {
     setInflationRate(plan.inflationRate);
     setRetirementYears(plan.retirementYears);
     setPlanName(plan.name);
-    setCurrentPlan(plan.id)
+    setCurrentPlan(plan.id);
   };
 
   const deletePlan = (planId: string) => {
@@ -457,7 +457,7 @@ export default function IncomePlanPage() {
             <div className="flex items-center gap-3 mb-1">
               <button
                 onClick={() => router.push("/plan")}
-                className="p-2 hover:bg-gray-200 dark:hover:bg-gray-700 rounded-lg transition-colors"
+                className="p-2 text-white rounded-lg transition-colors"
                 aria-label="กลับไปหน้าแผน"
               >
                 <svg
@@ -952,10 +952,6 @@ export default function IncomePlanPage() {
                         stroke="#9ca3af"
                       />
                       <Tooltip
-                        formatter={(value: number) => [
-                          `฿${formatNumber(value)}`,
-                          "",
-                        ]}
                         labelFormatter={(label) => `อายุ ${label} ปี`}
                         contentStyle={{
                           backgroundColor: "rgba(255, 255, 255, 0.95)",
@@ -1019,10 +1015,6 @@ export default function IncomePlanPage() {
                         stroke="#9ca3af"
                       />
                       <Tooltip
-                        formatter={(value: number) => [
-                          `฿${formatNumber(value)}`,
-                          "",
-                        ]}
                         contentStyle={{
                           backgroundColor: "rgba(255, 255, 255, 0.95)",
                           border: "1px solid #e5e7eb",
@@ -1067,7 +1059,6 @@ export default function IncomePlanPage() {
                         ))}
                       </Pie>
                       <Tooltip
-                        formatter={(value: number) => `฿${formatNumber(value)}`}
                         contentStyle={{
                           backgroundColor: "rgba(255, 255, 255, 0.95)",
                           border: "1px solid #e5e7eb",
@@ -1108,10 +1099,6 @@ export default function IncomePlanPage() {
                         stroke="#9ca3af"
                       />
                       <Tooltip
-                        formatter={(value: number) => [
-                          `฿${formatNumber(value)}`,
-                          "",
-                        ]}
                         labelFormatter={(label) => `อายุ ${label} ปี`}
                         contentStyle={{
                           backgroundColor: "rgba(255, 255, 255, 0.95)",

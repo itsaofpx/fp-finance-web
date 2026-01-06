@@ -291,9 +291,9 @@ const StockPricingPage = () => {
       chartContainerRef.current.id = containerId;
 
       const symbolFormats = [
+        symbol.toUpperCase(),
         `NASDAQ:${symbol.toUpperCase()}`,
         `NYSE:${symbol.toUpperCase()}`,
-        symbol.toUpperCase(),
         `AMEX:${symbol.toUpperCase()}`,
       ];
 

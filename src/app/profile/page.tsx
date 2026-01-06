@@ -2,12 +2,12 @@
 import Image from "next/image";
 import React, { useEffect, useState, Fragment, SyntheticEvent } from "react";
 import { useRouter } from "next/navigation";
-import { destroyCookie, parseCookies } from "nookies";
+import { parseCookies } from "nookies";
 import Backdrop from "@mui/material/Backdrop";
 import CircularProgress from "@mui/material/CircularProgress";
 import axios, { AxiosError } from "axios";
 import { Dialog, Transition } from "@headlessui/react";
-import { Plus, X } from "lucide-react";
+import { Plus, X, User } from "lucide-react";
 import Snackbar, { SnackbarCloseReason } from "@mui/material/Snackbar";
 import { Alert } from "@mui/material";
 
@@ -47,7 +47,6 @@ export default function ProfilePage() {
   const router = useRouter();
   const [userData, setUserData] = useState<UserData | null>(null);
   const [plans, setPlans] = useState<Plan[]>([]);
-  const [openBackDrop, setOpenBackDrop] = useState(false);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [sectors, setSectors] = useState<ISector[]>([]);
@@ -85,6 +84,7 @@ export default function ProfilePage() {
 
         setUserData(res.data);
 
+        // Fetch Plans
         try {
           const plansRes = await axios.get<Plan[]>(
             `http://localhost:3001/plans/account/${res.data.id}`
@@ -95,6 +95,7 @@ export default function ProfilePage() {
           setPlans([]);
         }
 
+        // Fetch Sectors
         try {
           const accountId = res.data.id;
           const sectorRes = await axios.get<ISector[]>(
@@ -129,24 +130,8 @@ export default function ProfilePage() {
     fetchUserProfile();
   }, [router]);
 
-  const handleLogout = async () => {
-    try {
-      setOpenBackDrop(true);
-      ["accessToken", "refreshToken", "account"].forEach((cookie) =>
-        destroyCookie(null, cookie, { path: "/" })
-      );
-      router.push("/");
-    } catch (error) {
-      console.error("Logout error:", error);
-      alert("An error occurred during logout. Please try again.");
-    } finally {
-      setOpenBackDrop(false);
-    }
-  };
-
   const toggleSector = async (sector: ISector) => {
     if (!userData) return;
-
     const isSelected = accountInterestSector.some((s) => s.id === sector.id);
 
     if (isSelected && accountInterestSector.length <= 3) {
@@ -155,7 +140,6 @@ export default function ProfilePage() {
     }
 
     let updated: ISector[];
-
     if (isSelected) {
       updated = accountInterestSector.filter((s) => s.id !== sector.id);
     } else {
@@ -177,9 +161,7 @@ export default function ProfilePage() {
     event: SyntheticEvent | Event,
     reason?: SnackbarCloseReason
   ) => {
-    if (reason === "clickaway") {
-      return;
-    }
+    if (reason === "clickaway") return;
     setOpenSnackAlert(false);
   };
 
@@ -189,6 +171,7 @@ export default function ProfilePage() {
         <CircularProgress color="inherit" />
       </Backdrop>
     );
+
   if (error)
     return (
       <div className="flex items-center justify-center min-h-screen bg-red-50">
@@ -204,287 +187,186 @@ export default function ProfilePage() {
         </div>
       </div>
     );
+
   if (!userData) return null;
 
   return (
     <div className="min-h-screen bg-gradient-to-br from-blue-50 to-indigo-100 dark:from-gray-900 dark:to-gray-800">
-      <div className="min-h-screen pt-20 pb-20">
-        <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8">
-          <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
-            {/* Left Column - Profile Card */}
-            <div className="lg:col-span-1 space-y-6">
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 top-24">
-                <div className="flex flex-col items-center">
-                  <div className="relative w-32 h-32 mb-6">
+      <div className="max-w-6xl mx-auto px-4 sm:px-6 lg:px-8 pt-24 pb-20">
+        <div className="grid grid-cols-1 lg:grid-cols-3 gap-8">
+          {/* Left Column - Profile Summary */}
+          <div className="lg:col-span-1">
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 sticky top-24 border border-gray-100 dark:border-gray-700">
+              <div className="flex flex-col items-center">
+                {/* AI-Style Avatar Ring */}
+                <div className="relative p-1 rounded-full bg-gradient-to-tr from-purple-500 via-blue-500 to-emerald-400">
+                  <div className="bg-white dark:bg-gray-800 rounded-full p-1">
                     <Image
                       src={userData.picture}
-                      alt="Profile Picture"
-                      width={128}
-                      height={128}
-                      className="rounded-full object-cover border-4 border-white dark:border-gray-700 shadow-lg"
+                      alt="Profile"
+                      width={120}
+                      height={120}
+                      className="rounded-full object-cover shadow-sm"
                       priority
                     />
-                    <div className="absolute -bottom-2 -right-2 w-8 h-8 bg-green-500 rounded-full border-4 border-white dark:border-gray-700"></div>
                   </div>
-                  <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                    {userData.givenName}
-                  </h1>
-                  <p className="text-gray-600 dark:text-gray-400 mb-6">
-                    Member
-                  </p>
-                  <div className="w-full space-y-3">
-                    <button
-                      className="w-full bg-gray-100 hover:bg-gray-200 dark:bg-gray-700 dark:hover:bg-gray-600 text-gray-700 dark:text-gray-300 font-medium py-3 px-6 rounded-xl transition-colors"
-                      onClick={handleLogout}
-                    >
-                      Log Out
-                    </button>
+                </div>
+
+                <h1 className="mt-6 text-2xl font-bold text-gray-900 dark:text-white">
+                  {userData.email}
+                </h1>
+
+                <div className="w-full mt-8 pt-6 border-t border-gray-100 dark:border-gray-700 space-y-4">
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">สถานะแผนการเงิน</span>
+                    <span className="text-emerald-500 font-semibold">
+                      {plans.length > 0 ? "Active" : "No Plan"}
+                    </span>
+                  </div>
+                  <div className="flex items-center justify-between text-sm">
+                    <span className="text-gray-500">เซคเตอร์ที่ติดตาม</span>
+                    <span className="text-gray-900 dark:text-gray-200 font-semibold">
+                      {accountInterestSector.length}
+                    </span>
                   </div>
                 </div>
               </div>
             </div>
+          </div>
 
-            {/* Right Column - Details */}
-            <div className="lg:col-span-2 space-y-6">
-              {/* Personal Info Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-blue-100 dark:bg-blue-900 rounded-lg flex items-center justify-center mr-3">
-                    <svg
-                      className="w-4 h-4 text-blue-600 dark:text-blue-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
-                    >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M16 7a4 4 0 11-8 0 4 4 0 018 0zM12 14a7 7 0 00-7 7h14a7 7 0 00-7-7z"
-                      />
-                    </svg>
-                  </div>
-                  Personal Information
-                </h2>
-                <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                      Full Name
-                    </label>
-                    <p className="text-lg text-gray-900 dark:text-white font-medium">
-                      {userData.givenName}
-                    </p>
-                  </div>
-                  <div className="space-y-2">
-                    <label className="block text-sm font-medium text-gray-500 dark:text-gray-400 uppercase tracking-wide">
-                      Email Address
-                    </label>
-                    <p className="text-lg text-gray-900 dark:text-white font-medium break-words">
-                      {userData.email}
-                    </p>
-                  </div>
+          {/* Right Column - Details Content */}
+          <div className="lg:col-span-2 space-y-6">
+            {/* Personal Info */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <User className="text-blue-500" /> ข้อมูลส่วนตัว
+              </h2>
+              <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 uppercase">
+                    ชื่อ-นามสกุล
+                  </label>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mt-1">
+                    {userData.givenName}
+                  </p>
+                </div>
+                <div>
+                  <label className="text-xs font-semibold text-gray-400 uppercase">
+                    อีเมล
+                  </label>
+                  <p className="text-lg font-medium text-gray-900 dark:text-white mt-1 break-all">
+                    {userData.email}
+                  </p>
                 </div>
               </div>
+            </div>
 
-              {/* Interested Sectors Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center mr-3">
-                    <Plus className="w-4 h-4 text-emerald-600 dark:text-emerald-400" />
-                  </div>
-                  Sectors I’m Interested In
+            {/* Sectors */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+              <div className="flex justify-between items-center mb-6">
+                <h2 className="text-xl font-bold text-gray-900 dark:text-white flex items-center gap-3">
+                  <Plus className="text-emerald-500" /> เซคเตอร์ที่สนใจ
                 </h2>
-                <div className="flex flex-wrap gap-2">
-                  {accountInterestSector.map((sector) => (
-                    <span
-                      key={sector.id}
-                      className="px-4 py-2 bg-emerald-100 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 rounded-full text-sm flex items-center gap-1"
-                    >
-                      {sector.name}
-                      <X
-                        className="w-3 h-3 cursor-pointer"
-                        onClick={() => toggleSector(sector)}
-                      />
-                    </span>
-                  ))}
-                  <button
-                    onClick={() => setShowSectorModal(true)}
-                    className="px-4 py-2 bg-gray-200 dark:bg-gray-700 text-gray-700 dark:text-gray-200 rounded-full text-sm flex items-center justify-center"
+              </div>
+              <div className="flex flex-wrap gap-2">
+                {accountInterestSector.map((sector) => (
+                  <span
+                    key={sector.id}
+                    className="px-4 py-2 bg-emerald-50 dark:bg-emerald-900/40 text-emerald-700 dark:text-emerald-300 rounded-lg text-sm flex items-center gap-2 border border-emerald-100 dark:border-emerald-800"
                   >
-                    <Plus className="w-3 h-3 mr-1" /> Add
+                    {sector.name}
+                    <X
+                      className="w-4 h-4 cursor-pointer hover:text-red-500"
+                      onClick={() => toggleSector(sector)}
+                    />
+                  </span>
+                ))}
+                <button
+                  onClick={() => setShowSectorModal(true)}
+                  className="px-4 py-2 border-2 border-dashed border-gray-200 dark:border-gray-700 text-gray-400 hover:text-emerald-500 hover:border-emerald-500 rounded-lg text-sm transition-all"
+                >
+                  + เพิ่มเซคเตอร์
+                </button>
+              </div>
+            </div>
+
+            {/* Financial Plans */}
+            <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8 border border-gray-100 dark:border-gray-700">
+              <h2 className="text-xl font-bold text-gray-900 dark:text-white mb-6 flex items-center gap-3">
+                <span className="text-xl">📋</span> แผนการเงินของฉัน
+              </h2>
+
+              {plans.length === 0 ? (
+                <div className="text-center py-10">
+                  <p className="text-gray-500 mb-4">
+                    คุณยังไม่มีแผนการเงินในขณะนี้
+                  </p>
+                  <button
+                    onClick={() => router.push("/plan")}
+                    className="px-6 py-2 bg-emerald-600 text-white rounded-xl hover:bg-emerald-700"
+                  >
+                    เริ่มสร้างแผน
                   </button>
                 </div>
-              </div>
-
-              {/* My Plans Card */}
-              <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl p-8">
-                <h2 className="text-2xl font-bold text-gray-900 dark:text-white mb-6 flex items-center">
-                  <div className="w-8 h-8 bg-emerald-100 dark:bg-emerald-900 rounded-lg flex items-center justify-center mr-3">
-                    <svg
-                      className="w-4 h-4 text-emerald-600 dark:text-emerald-400"
-                      fill="none"
-                      stroke="currentColor"
-                      viewBox="0 0 24 24"
+              ) : (
+                <div className="grid gap-4">
+                  {plans.map((plan) => (
+                    <div
+                      key={plan.id}
+                      className="group p-5 bg-gray-50 dark:bg-gray-900/50 rounded-2xl border border-gray-100 dark:border-gray-800 hover:border-blue-400 transition-all"
                     >
-                      <path
-                        strokeLinecap="round"
-                        strokeLinejoin="round"
-                        strokeWidth="2"
-                        d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z"
-                      />
-                    </svg>
-                  </div>
-                  My Financial Plans
-                  <span className="ml-auto text-sm bg-emerald-100 dark:bg-emerald-900 text-emerald-600 dark:text-emerald-400 px-3 py-1 rounded-full">
-                    {plans.length} {plans.length === 1 ? "Plan" : "Plans"}
-                  </span>
-                </h2>
-
-                {plans.length === 0 ? (
-                  <div className="text-center py-12">
-                    <div className="w-16 h-16 bg-gray-100 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-4">
-                      <span className="text-3xl">📋</span>
-                    </div>
-                    <p className="text-gray-500 dark:text-gray-400 mb-4">
-                      คุณยังไม่มีแผนการเงิน
-                    </p>
-                    <button
-                      onClick={() => router.push("/plan")}
-                      className="px-6 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg transition-colors"
-                    >
-                      สร้างแผนแรกของคุณ
-                    </button>
-                  </div>
-                ) : (
-                  <div className="space-y-4">
-                    {plans.map((plan) => (
-                      <div
-                        key={plan.id}
-                        className="bg-gradient-to-r from-gray-50 to-gray-100 dark:from-gray-700 dark:to-gray-600 rounded-xl p-5 hover:shadow-md transition-all duration-200 border border-gray-200 dark:border-gray-600"
-                      >
-                        <div className="flex items-start justify-between mb-3">
-                          <div className="flex items-center gap-3">
-                            <div
-                              className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                      <div className="flex justify-between items-start">
+                        <div className="flex items-center gap-4">
+                          <div className="w-12 h-12 bg-white dark:bg-gray-800 rounded-xl flex items-center justify-center shadow-sm">
+                            {plan.planType === "ib" ? "💰" : "🎯"}
+                          </div>
+                          <div>
+                            <h3 className="font-bold text-gray-900 dark:text-white">
+                              {plan.name}
+                            </h3>
+                            <p className="text-xs text-gray-500">
+                              {plan.planType === "ib"
+                                ? "Income Based"
+                                : "Goal Based"}
+                            </p>
+                          </div>
+                        </div>
+                        <button
+                          onClick={() =>
+                            router.push(
+                              `/plan/${
                                 plan.planType === "ib"
-                                  ? "bg-blue-100 dark:bg-blue-900"
-                                  : "bg-purple-100 dark:bg-purple-900"
-                              }`}
-                            >
-                              <span className="text-xl">
-                                {plan.planType === "ib" ? "💰" : "🎯"}
-                              </span>
-                            </div>
-                            <div>
-                              <h3 className="text-lg font-semibold text-gray-900 dark:text-white">
-                                {plan.name}
-                              </h3>
-                              <p className="text-xs text-gray-500 dark:text-gray-400">
-                                {plan.planType === "ib"
-                                  ? "แผนตามรายได้"
-                                  : "แผนตามเป้าหมาย"}
-                              </p>
-                            </div>
-                          </div>
-                          <button
-                            onClick={() =>
-                              router.push(
-                                `/plan/${
-                                  plan.planType === "ib"
-                                    ? "income-based"
-                                    : "goal-based"
-                                }`
-                              )
-                            }
-                            className="text-emerald-600 hover:text-emerald-700 dark:text-emerald-400 dark:hover:text-emerald-300 text-sm font-medium"
-                          >
-                            ดูรายละเอียด →
-                          </button>
-                        </div>
-                        <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
-                          <div className="space-y-1">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              อายุปัจจุบัน
-                            </p>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {plan.currentAge} ปี
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              อายุเป้าหมาย
-                            </p>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {plan.retirementAge} ปี
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              เงินออมปัจจุบัน
-                            </p>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                              ฿
-                              {new Intl.NumberFormat("th-TH").format(
-                                plan.currentSavings
-                              )}
-                            </p>
-                          </div>
-                          <div className="space-y-1">
-                            <p className="text-xs text-gray-500 dark:text-gray-400">
-                              ผลตอบแทน
-                            </p>
-                            <p className="text-sm font-semibold text-gray-900 dark:text-white">
-                              {parseFloat(
-                                plan.expectedReturn.toString()
-                              ).toFixed(2)}
-                              % / ปี
-                            </p>
-                          </div>
-                        </div>
-                        <div className="mt-3 pt-3 border-t border-gray-300 dark:border-gray-500">
-                          <p className="text-xs text-gray-500 dark:text-gray-400">
-                            สร้างเมื่อ:{" "}
-                            {new Date(plan.createdAt).toLocaleDateString(
-                              "th-TH",
-                              { year: "numeric", month: "long", day: "numeric" }
-                            )}
-                          </p>
-                        </div>
+                                  ? "income-based"
+                                  : "goal-based"
+                              }`
+                            )
+                          }
+                          className="text-sm font-semibold text-blue-600 hover:underline"
+                        >
+                          จัดการแผน
+                        </button>
                       </div>
-                    ))}
-                  </div>
-                )}
-              </div>
+                    </div>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
         </div>
       </div>
-
-      {/* Logout Backdrop */}
-      <Backdrop
-        sx={(theme) => ({ color: "#fff", zIndex: theme.zIndex.drawer + 1 })}
-        open={openBackDrop}
-      >
-        <CircularProgress color="inherit" />
-      </Backdrop>
 
       <Snackbar
         anchorOrigin={{ vertical: "top", horizontal: "right" }}
         autoHideDuration={3000}
         open={openSnackAlert}
         onClose={handleCloseSnackAlert}
-        key={"topright"}
       >
-        <Alert
-          onClose={handleCloseSnackAlert}
-          severity="error"
-          sx={{ width: "100%" }}
-        >
-          ไม่สามารถเลือกต่ำกว่า 3 เซคเตอร์ได้!
+        <Alert severity="error" variant="filled">
+          ต้องเลือกอย่างน้อย 3 เซคเตอร์
         </Alert>
       </Snackbar>
 
-      {/* Sector Modal */}
+      {/* Sector Modal (Keep as is) */}
       <Transition appear show={showSectorModal} as={Fragment}>
         <Dialog
           as="div"
@@ -500,52 +382,43 @@ export default function ProfilePage() {
             leaveFrom="opacity-100"
             leaveTo="opacity-0"
           >
-            <div className="fixed inset-0 bg-black bg-opacity-30" />
+            <div className="fixed inset-0 bg-black/60 backdrop-blur-sm" />
           </Transition.Child>
           <div className="fixed inset-0 overflow-y-auto">
-            <div className="flex min-h-full items-center justify-center p-4 text-center">
-              <Transition.Child
-                as={Fragment}
-                enter="ease-out duration-300"
-                enterFrom="opacity-0 scale-95"
-                enterTo="opacity-100 scale-100"
-                leave="ease-in duration-200"
-                leaveFrom="opacity-100 scale-100"
-                leaveTo="opacity-0 scale-95"
-              >
-                <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-6 text-left align-middle shadow-xl transition-all">
-                  <Dialog.Title className="text-lg font-medium leading-6 text-gray-900 dark:text-white mb-4">
-                    Select Sectors
-                  </Dialog.Title>
-                  <div className="flex flex-wrap gap-2 max-h-60 overflow-y-auto">
-                    {sectors.map((sector) => {
-                      const selected = accountInterestSector.includes(sector);
-                      return (
-                        <button
-                          key={sector.id}
-                          onClick={() => toggleSector(sector)}
-                          className={`px-3 py-1 rounded-full text-xs border transition-colors ${
-                            selected
-                              ? "bg-emerald-100 dark:bg-emerald-700 text-emerald-800 dark:text-emerald-200 border-emerald-300 dark:border-emerald-500"
-                              : "bg-gray-100 dark:bg-gray-700 text-gray-700 dark:text-gray-200 border-gray-300 dark:border-gray-500 hover:bg-gray-200 dark:hover:bg-gray-600"
-                          }`}
-                        >
-                          {sector.name}
-                        </button>
-                      );
-                    })}
-                  </div>
-                  <div className="mt-4 text-right">
-                    <button
-                      type="button"
-                      className="px-4 py-2 bg-emerald-600 hover:bg-emerald-700 text-white rounded-lg"
-                      onClick={() => setShowSectorModal(false)}
-                    >
-                      Done
-                    </button>
-                  </div>
-                </Dialog.Panel>
-              </Transition.Child>
+            <div className="flex min-h-full items-center justify-center p-4">
+              <Dialog.Panel className="w-full max-w-md transform overflow-hidden rounded-2xl bg-white dark:bg-gray-800 p-8 text-left shadow-2xl transition-all">
+                <Dialog.Title className="text-xl font-bold text-gray-900 dark:text-white mb-6">
+                  เลือกเซคเตอร์ที่สนใจ
+                </Dialog.Title>
+                <div className="flex flex-wrap gap-2 max-h-80 overflow-y-auto pr-2">
+                  {sectors.map((sector) => {
+                    const selected = accountInterestSector.some(
+                      (s) => s.id === sector.id
+                    );
+                    return (
+                      <button
+                        key={sector.id}
+                        onClick={() => toggleSector(sector)}
+                        className={`px-4 py-2 rounded-xl text-sm font-medium transition-all border ${
+                          selected
+                            ? "bg-emerald-600 text-white border-emerald-600"
+                            : "bg-gray-50 dark:bg-gray-700 text-gray-600 dark:text-gray-300 border-gray-200 dark:border-gray-600"
+                        }`}
+                      >
+                        {sector.name}
+                      </button>
+                    );
+                  })}
+                </div>
+                <div className="mt-8">
+                  <button
+                    className="w-full py-3 bg-gray-900 dark:bg-white dark:text-gray-900 text-white rounded-xl font-bold"
+                    onClick={() => setShowSectorModal(false)}
+                  >
+                    บันทึกข้อมูล
+                  </button>
+                </div>
+              </Dialog.Panel>
             </div>
           </div>
         </Dialog>

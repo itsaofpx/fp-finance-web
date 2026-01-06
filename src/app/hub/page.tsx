@@ -160,9 +160,9 @@ const HubPage = () => {
   const [news, setNews] = useState<INewsArticle[]>([]);
   const [featuredArticle, setFeaturedArticle] = useState<AINewsArticle | null>(
     null
-  ); // NEW
-  const [featuredLoading, setFeaturedLoading] = useState(true); // NEW
-  const [featuredError, setFeaturedError] = useState<string | null>(null); // NEW
+  );
+  const [featuredLoading, setFeaturedLoading] = useState(true);
+  const [featuredError, setFeaturedError] = useState<string | null>(null);
   const [stocksByCategory, setStocksByCategory] = useState<{
     [key: string]: IStock[];
   }>({});
@@ -200,7 +200,7 @@ const HubPage = () => {
       const response = await axios.get(
         `http://localhost:3001/sector/${userId}`
       );
-      return response.data; // array ของ sector
+      return response.data;
     } catch (error) {
       console.error("Error fetching account sectors:", error);
       return [];
@@ -222,44 +222,37 @@ const HubPage = () => {
   }, []);
 
   useEffect(() => {
-    const fetchNews = async () => {
+    const fetchCombinedNews = async () => {
       try {
-        const res = await fetch(
-          "http://localhost:3002/news/?page=1&per_page=3"
-        );
-        const data: INewsResponse = await res.json();
-        setNews(data.data);
+        setLoadingNews(true);
+        setFeaturedLoading(true);
+
+        const [aiRes, newsRes] = await Promise.all([
+          axios.get("http://localhost:3002/news/prompt/latest"),
+          axios.get("http://localhost:3002/news/?page=1&per_page=2"),
+        ]);
+
+        let aiArticle = { ...aiRes.data, url: `/news` };
+
+        if (aiArticle.content) {
+          aiArticle.content = aiArticle.content
+            .replace(/\*\*(.*?)\*\*/g, "$1")
+            .trim();
+        }
+
+        setFeaturedArticle(aiArticle);
+        const generalNews = newsRes.data.data;
+        setNews([aiArticle, ...generalNews]);
       } catch (error) {
-        console.error("เกิดข้อผิดพลาดในการดึงข้อมูลข่าว:", error);
+        console.error("เกิดข้อผิดพลาดในการรวมข้อมูลข่าว:", error);
+        setFeaturedError("ไม่สามารถโหลดข้อมูลข่าวบางส่วนได้");
       } finally {
         setLoadingNews(false);
-      }
-    };
-
-    const fetchFeaturedArticle = async () => {
-      // NEW
-      try {
-        setFeaturedLoading(true);
-        setFeaturedError(null);
-        const response = await axios.get<AINewsArticle>(
-          "http://localhost:3002/news/prompt/latest"
-        );
-        if (!response.data.content) {
-          throw new Error("ไม่พบเนื้อหาบทความ");
-        }
-        setFeaturedArticle(response.data);
-      } catch (err) {
-        console.error("Error fetching featured article:", err);
-        setFeaturedError(
-          err instanceof Error ? err.message : "ไม่สามารถโหลดบทความเด่นได้"
-        );
-      } finally {
         setFeaturedLoading(false);
       }
     };
 
-    fetchFeaturedArticle();
-    fetchNews();
+    fetchCombinedNews();
   }, []);
 
   useEffect(() => {
@@ -268,8 +261,6 @@ const HubPage = () => {
     const fetchStocks = async () => {
       try {
         const results: { [key: string]: IStock[] } = {};
-
-        // Filter stockCategories ที่อยู่ใน userSectors
         const filteredCategories = stockCategories.filter((cat) =>
           userSectors.some((s) => cat.title.includes(s))
         );
@@ -571,15 +562,6 @@ const HubPage = () => {
                     </div>
                   );
                 })}
-                {/* เพิ่มปุ่ม + เพิ่ม Sector
-                <div className="flex items-center justify-center bg-slate-800/50 border border-slate-700/50 rounded-2xl cursor-pointer hover:border-slate-600/50 transition-all duration-300">
-                  <button
-                    className="text-white text-lg font-medium"
-                    onClick={() => router.push("/sector")}
-                  >
-                    + เพิ่ม Sector
-                  </button>
-                </div> */}
               </div>
             ) : (
               <div className="text-center py-8 text-slate-400 text-sm">
@@ -598,78 +580,109 @@ const HubPage = () => {
               <div className="w-24 h-1 bg-gradient-to-r from-purple-500 to-pink-500 mx-auto rounded-full"></div>
             </div>
 
-            <div className="mt-12 mb-12">
-              <FeaturedArticleComponent
-                featuredArticle={featuredArticle}
-                featuredLoading={featuredLoading}
-                featuredError={featuredError}
-                onRetry={() => {
-                  setFeaturedLoading(true);
-                  setFeaturedError(null);
-                  axios
-                    .get<AINewsArticle>(
-                      "http://localhost:3002/news/prompt/latest"
-                    )
-                    .then((response) => {
-                      if (!response.data.content) {
-                        throw new Error("ไม่พบเนื้อหาบทความ");
-                      }
-                      setFeaturedArticle(response.data);
-                    })
-                    .catch((err) =>
-                      setFeaturedError(
-                        err instanceof Error
-                          ? err.message
-                          : "ไม่สามารถโหลดบทความเด่นได้"
-                      )
-                    )
-                    .finally(() => setFeaturedLoading(false));
-                }}
-              />
-            </div>
-
             {loadingNews ? (
-              <div className="flex justify-center">
+              <div className="flex justify-center py-20">
                 <div className="animate-spin rounded-full h-12 w-12 border-b-2 border-purple-500"></div>
               </div>
             ) : (
               <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
-                {news.map((article, index) => (
-                  <div
-                    key={article.id}
-                    className="group cursor-pointer rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 overflow-hidden hover:border-slate-600/50 transition-all duration-300 hover:scale-105"
-                    onClick={() => window.open(article.url, "_blank")}
-                    style={{ animationDelay: `${index * 100}ms` }}
-                  >
-                    <div className="p-6">
-                      <div className="flex items-center justify-between text-slate-400 text-sm mb-4">
-                        <div className="flex items-center gap-2">
-                          <Calendar className="w-4 h-4" />
-                          <span>{formatDate(article.publishedAt)}</span>
+                {news.map((article: any, index: number) => {
+                  const isAI = index === 0;
+
+                  return (
+                    <div
+                      key={article.id || `news-${index}`}
+                      className={`group relative cursor-pointer rounded-2xl transition-all duration-500 hover:scale-[1.03] border backdrop-blur-md overflow-hidden flex flex-col
+          ${
+            isAI
+              ? "bg-slate-900/40 border-blue-500/50 shadow-[0_0_20px_rgba(59,130,246,0.15)] hover:shadow-[0_0_25px_rgba(59,130,246,0.3)]"
+              : "bg-slate-800/50 border-slate-700/50 hover:border-slate-600/50 shadow-lg"
+          }`}
+                      onClick={() => {
+                        article.url === "/news"
+                          ? router.push("/news")
+                          : window.open(article.url, "_blank");
+                      }}
+                      style={{ animationDelay: `${index * 100}ms` }}
+                    >
+                      {/* แถบสีด้านบนสำหรับการ์ด AI */}
+                      {isAI && (
+                        <div className="absolute top-0 left-0 right-0 h-[2px] bg-gradient-to-r from-transparent via-blue-500 to-transparent" />
+                      )}
+
+                      <div className="p-6 flex flex-col h-full">
+                        <div className="flex items-center justify-between text-slate-400 text-sm mb-4">
+                          <div className="flex items-center gap-2">
+                            {isAI ? (
+                              <div className="flex items-center gap-1.5 px-2.5 py-1 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20 shadow-[0_0_10px_rgba(59,130,246,0.1)]">
+                                <Zap className="w-3.5 h-3.5 fill-blue-400 animate-pulse" />
+                                <span className="text-[10px] font-black uppercase tracking-[0.1em]">
+                                  AI Insight
+                                </span>
+                              </div>
+                            ) : (
+                              <div className="flex items-center gap-2 text-slate-400">
+                                <Calendar className="w-4 h-4" />
+                                <span className="text-xs">
+                                  {article.publishedAt
+                                    ? formatDate(article.publishedAt)
+                                    : "N/A"}
+                                </span>
+                              </div>
+                            )}
+                          </div>
+                          <div className="flex items-center gap-2 text-slate-500">
+                            <Clock className="w-3.5 h-3.5" />
+                            <span className="text-xs">
+                              {article.estimatedReadTime || 3} นาที
+                            </span>
+                          </div>
                         </div>
-                        <div className="flex items-center gap-2">
-                          <Clock className="w-4 h-4" />
-                          <span>{article.estimatedReadTime} นาที</span>
+
+                        <h3
+                          className={`text-lg font-bold mb-3 line-clamp-2 transition-colors duration-300
+              ${
+                isAI
+                  ? "text-blue-100 group-hover:text-blue-300"
+                  : "text-slate-100 group-hover:text-blue-400"
+              }`}
+                        >
+                          {article.title}
+                        </h3>
+
+                        <p className="text-slate-400 text-sm mb-6 line-clamp-4 leading-relaxed flex-grow">
+                          {article.content ||
+                            article.description ||
+                            "ไม่มีเนื้อหาข่าว"}
+                        </p>
+
+                        <div className="flex items-center justify-between mt-auto pt-4 border-t border-slate-700/30">
+                          <div className="flex items-center gap-2">
+                            <div
+                              className={`w-1.5 h-1.5 rounded-full ${
+                                isAI
+                                  ? "bg-blue-500 animate-pulse"
+                                  : "bg-slate-600"
+                              }`}
+                            />
+                            <span className="text-[11px] font-medium text-slate-500 tracking-wide uppercase">
+                              Source: {article.source || "AI Analysis"}
+                            </span>
+                          </div>
+                          <div
+                            className={`p-1.5 rounded-lg transition-colors ${
+                              isAI
+                                ? "bg-blue-500/10 text-blue-400"
+                                : "bg-slate-700/30 text-slate-500"
+                            }`}
+                          >
+                            <ExternalLink className="w-4 h-4" />
+                          </div>
                         </div>
-                      </div>
-
-                      <h3 className="text-lg font-semibold text-white mb-3 line-clamp-2 group-hover:text-blue-400 transition-colors">
-                        {article.title}
-                      </h3>
-
-                      <p className="text-slate-300 text-sm mb-4 line-clamp-3">
-                        {article.description}
-                      </p>
-
-                      <div className="flex items-center justify-between">
-                        <span className="text-xs text-slate-500">
-                          แหล่งที่มา: {article.source}
-                        </span>
-                        <ExternalLink className="w-4 h-4 text-slate-400 group-hover:text-blue-400 transition-colors" />
                       </div>
                     </div>
-                  </div>
-                ))}
+                  );
+                })}
               </div>
             )}
 
