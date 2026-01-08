@@ -10,6 +10,7 @@ import {
   User,
   LogOut,
   Sparkles,
+  Calendar,
 } from "lucide-react";
 import { useRouter } from "next/navigation";
 import { parseCookies, destroyCookie } from "nookies";
@@ -58,6 +59,14 @@ const NavBar = () => {
     router.push(path);
   };
 
+  const handleLogin = async (): Promise<void> => {
+    try {
+      window.location.href = "http://localhost:3001/auth/google/login";
+    } catch (error) {
+      console.log(error);
+    }
+  };
+
   const handleLogout = () => {
     destroyCookie(null, "accessToken");
     window.location.href = "/";
@@ -82,6 +91,12 @@ const NavBar = () => {
 
           {/* Desktop Menu */}
           <div className="hidden md:flex items-center space-x-4">
+            <button
+              onClick={() => handleNavigation("/news")}
+              className="text-gray-300 hover:text-white px-3 py-2"
+            >
+              ข่าว
+            </button>
             {/* เมนูศูนย์การเรียนรู้ */}
             <button
               onClick={(e) => setLearningAnchor(e.currentTarget)}
@@ -136,7 +151,7 @@ const NavBar = () => {
               </div>
             ) : (
               <button
-                onClick={() => handleNavigation("/login")}
+                onClick={() => handleLogin()}
                 className="bg-blue-600 hover:bg-blue-700 text-white px-5 py-2 rounded-full text-sm font-medium transition-all"
               >
                 เข้าสู่ระบบ
@@ -162,11 +177,16 @@ const NavBar = () => {
         open={Boolean(learningAnchor)}
         onClose={() => setLearningAnchor(null)}
       >
-        <MenuItem onClick={() => handleNavigation("/glossary")}>
-          <BookOpen className="w-4 h-4 mr-3 text-blue-400" /> คำศัพท์ลงทุน
-        </MenuItem>
         <MenuItem onClick={() => handleNavigation("/tool")}>
           <Wrench className="w-4 h-4 mr-3 text-emerald-400" /> เครื่องมือคำนวณ
+        </MenuItem>
+        {isLogin && (
+          <MenuItem onClick={() => handleNavigation("/plan")}>
+            <Calendar className="w-4 h-4 mr-3 text-purple-400" /> แผนการลงทุน
+          </MenuItem>
+        )}
+        <MenuItem onClick={() => handleNavigation("/glossary")}>
+          <BookOpen className="w-4 h-4 mr-3 text-blue-400" /> คำศัพท์ลงทุน
         </MenuItem>
         <MenuItem onClick={() => handleNavigation("/portfolios")}>
           <Sparkles className="w-4 h-4 mr-3 text-yellow-400" />
