@@ -15,11 +15,23 @@ export default function RootLayout({
   const isToolPath = pathname.startsWith("/tool/");
   const isPricePath = pathname.startsWith("/pricing");
   const isGetStartedPath = pathname.startsWith("/get-started");
+  const isPlanPath = pathname.startsWith("/plan");
 
   if (isPricePath || isGetStartedPath) {
     return (
       <html lang="en">
         <body>{children}</body>
+      </html>
+    );
+  }
+
+  if (isPlanPath) {
+    return (
+      <html lang="en">
+        <body>
+          <NavBar />
+          {children}
+        </body>
       </html>
     );
   }

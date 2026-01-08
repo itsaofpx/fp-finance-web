@@ -332,15 +332,7 @@ export default function ProfilePage() {
                           </div>
                         </div>
                         <button
-                          onClick={() =>
-                            router.push(
-                              `/plan/${
-                                plan.planType === "ib"
-                                  ? "income-based"
-                                  : "goal-based"
-                              }`
-                            )
-                          }
+                          onClick={() => router.push(`/plan/${plan.id}`)}
                           className="text-sm font-semibold text-blue-600 hover:underline"
                         >
                           จัดการแผน

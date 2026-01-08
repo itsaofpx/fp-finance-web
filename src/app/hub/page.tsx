@@ -717,13 +717,7 @@ const HubPage = () => {
                   <div
                     key={plan.id}
                     onClick={() => {
-                      switch (plan.planType) {
-                        case "gb":
-                          router.push(`/plan/goal-based`);
-                          break;
-                        case "ib":
-                          router.push(`/plan/income-based`);
-                      }
+                      router.push(`plan/${plan.id}`);
                     }}
                     className="group relative overflow-hidden rounded-2xl bg-gradient-to-br from-slate-800/50 to-slate-900/50 backdrop-blur-sm border border-slate-700/50 p-6 hover:border-slate-600/50 transition-all duration-300 hover:scale-105"
                     style={{ animationDelay: `${index * 100}ms` }}
