@@ -14,6 +14,7 @@ import {
   DialogContentText,
 } from "@mui/material";
 import axios from "axios";
+import FormulaDialog from "@/components/FormulaDialog";
 import {
   AreaChart,
   Area,
@@ -71,6 +72,7 @@ export default function IncomePlanPage() {
     message: "",
     onConfirm: () => {},
   });
+  const [openFormula, setOpenFormula] = useState(false);
 
   const fetchPlansFromDatabase = async (accountId: string, token: string) => {
     try {
@@ -482,13 +484,58 @@ export default function IncomePlanPage() {
               วางแผนอนาคตที่มั่นคงด้วยเครื่องคำนวณแบบมืออาชีพ
             </p>
           </div>
-          <button
-            onClick={createNewPlan}
-            className="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center gap-2"
-          >
-            <span>✨</span> สร้างแผนใหม่
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setOpenFormula(true)}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center gap-2"
+            >
+              <span>📐</span> สูตรการคำนวณ
+            </button>
+            <button
+              onClick={createNewPlan}
+              className="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center gap-2"
+            >
+              <span>✨</span> สร้างแผนใหม่
+            </button>
+          </div>
         </div>
+
+        {/* Formula Dialog */}
+        <FormulaDialog
+          open={openFormula}
+          onClose={() => setOpenFormula(false)}
+          formulas={[
+            {
+              title: "1. เงินสะสมเมื่อเกษียณ",
+              formula: "FV = PV × (1 + r)^n + PMT × [((1 + r)^n - 1) / r]",
+              color: "blue",
+              textColor: "text-blue-300",
+              description: "FV = มูลค่าในอนาคต\nPV = เงินสะสมปัจจุบัน\nPMT = จำนวนเงินออมต่อเดือน\nr = อัตราผลตอบแทนต่อเดือน (expected return / 12)\nn = จำนวนเดือนที่เหลือจนเกษียณ",
+            },
+            {
+              title: "2. ต้องออมเดือนละ",
+              formula: "PMT = [FV - (PV × (1 + r)^n)] / [((1 + r)^n - 1) / r]",
+              color: "green",
+              textColor: "text-green-300",
+              description: "PMT = จำนวนเงินที่ต้องออมต่อเดือน\nFV = เงินทั้งหมดที่ต้องมีเมื่อเกษียณ\nPV = เงินสะสมปัจจุบัน\nr = อัตราผลตอบแทนต่อเดือน\nn = จำนวนเดือนที่เหลือจนเกษียณ",
+            },
+            {
+              title: "3. ค่าใช้จ่ายจริงแท้จริง",
+              formula: "Real Expenses = Monthly Expenses × (1 + inflation rate)^years",
+              color: "purple",
+              textColor: "text-purple-300",
+              description: "Real Expenses = ค่าใช้จ่ายรายเดือนในอนาคต\nMonthly Expenses = ค่าใช้จ่ายรายเดือนปัจจุบัน\ninflation rate = อัตราเงินเฟ้อ (%)\nyears = จำนวนปีจนกว่าจะเกษียณ",
+            },
+            {
+              title: "4. เงินที่ต้องสะสมสำหรับเกษียณ",
+              formula: "Total Needed = Real Expenses × Retirement Years × 12",
+              color: "yellow",
+              textColor: "text-yellow-300",
+              description: "Total Needed = เงินทั้งหมดที่ต้องสะสม\nReal Expenses = ค่าใช้จ่ายรายเดือนในอนาคต\nRetirement Years = ระยะเวลาการเกษียณ (ปี)\n12 = จำนวนเดือนในหนึ่งปี",
+            },
+          ]}
+          title="📐 สูตรการคำนวณแผนเกษียณ"
+        />
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* Left Sidebar - Saved Plans */}

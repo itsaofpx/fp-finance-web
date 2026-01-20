@@ -14,6 +14,7 @@ import {
   DialogContentText,
 } from "@mui/material";
 import axios from "axios";
+import FormulaDialog from "@/components/FormulaDialog";
 import {
   AreaChart,
   Area,
@@ -75,6 +76,7 @@ export default function GoalPlanPage() {
     message: "",
     onConfirm: () => {},
   });
+  const [openFormula, setOpenFormula] = useState(false);
 
   const fetchPlansFromDatabase = async (accountId: string, token: string) => {
     try {
@@ -484,13 +486,58 @@ export default function GoalPlanPage() {
               วางแผนอนาคตที่มั่นคงด้วยเครื่องคำนวณแบบมืออาชีพ
             </p>
           </div>
-          <button
-            onClick={createNewPlan}
-            className="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center gap-2"
-          >
-            <span>✨</span> สร้างแผนใหม่
-          </button>
+          <div className="flex items-center gap-3">
+            <button
+              onClick={() => setOpenFormula(true)}
+              className="px-5 py-2.5 bg-blue-600 hover:bg-blue-700 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center gap-2"
+            >
+              <span>📐</span> สูตรการคำนวณ
+            </button>
+            <button
+              onClick={createNewPlan}
+              className="px-5 py-2.5 bg-slate-700 hover:bg-slate-800 text-white rounded-lg transition-all duration-200 shadow-md hover:shadow-lg font-medium flex items-center gap-2"
+            >
+              <span>✨</span> สร้างแผนใหม่
+            </button>
+          </div>
         </div>
+
+        {/* Formula Dialog */}
+        <FormulaDialog
+          open={openFormula}
+          onClose={() => setOpenFormula(false)}
+          formulas={[
+            {
+              title: "1. มูลค่าในอนาคต",
+              formula: "FV = PV × (1 + r)^n + PMT × [((1 + r)^n - 1) / r]",
+              color: "blue",
+              textColor: "text-blue-300",
+              description: "FV = มูลค่าในอนาคต (เงินเป้าหมาย)\nPV = เงินสะสมปัจจุบัน\nPMT = จำนวนเงินออมต่อเดือน\nr = อัตราผลตอบแทนต่อเดือน (expected return / 12)\nn = จำนวนเดือนที่เหลือจนถึงเป้าหมาย",
+            },
+            {
+              title: "2. ต้องออมเดือนละเท่าไร",
+              formula: "PMT = [FV - (PV × (1 + r)^n)] / [((1 + r)^n - 1) / r]",
+              color: "green",
+              textColor: "text-green-300",
+              description: "PMT = จำนวนเงินที่ต้องออมต่อเดือน\nFV = เงินเป้าหมาย\nPV = เงินสะสมปัจจุบัน\nr = อัตราผลตอบแทนต่อเดือน\nn = จำนวนเดือนที่เหลือจนถึงเป้าหมาย",
+            },
+            {
+              title: "3. กำหนดเวลาถึงเป้าหมาย",
+              formula: "n = LOG((FV × r + PMT) / (PV × r + PMT)) / LOG(1 + r)",
+              color: "purple",
+              textColor: "text-purple-300",
+              description: "n = จำนวนเดือนที่ต้องใช้\nFV = เงินเป้าหมาย\nPV = เงินสะสมปัจจุบัน\nPMT = จำนวนเงินออมต่อเดือน\nr = อัตราผลตอบแทนต่อเดือน",
+            },
+            {
+              title: "4. เงินต้นที่ต้องมี",
+              formula: "PV = (FV - PMT × [((1 + r)^n - 1) / r]) / (1 + r)^n",
+              color: "yellow",
+              textColor: "text-yellow-300",
+              description: "PV = เงินต้นที่ต้องมี\nFV = เงินเป้าหมาย\nPMT = จำนวนเงินออมต่อเดือน\nr = อัตราผลตอบแทนต่อเดือน\nn = จำนวนเดือนที่ต้องใช้",
+            },
+          ]}
+          title="📐 สูตรการคำนวณแผนออมเงิน"
+        />
 
         <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
           {/* Left Sidebar - Saved Plans */}
