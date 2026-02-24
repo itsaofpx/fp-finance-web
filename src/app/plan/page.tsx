@@ -1,5 +1,5 @@
 "use client";
-import { useState, useEffect } from "react";
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import { parseCookies } from "nookies";
 import axios from "axios";
@@ -11,8 +11,8 @@ import {
   X,
   Loader2,
   Sparkles,
-  Calendar,
   DollarSign,
+  ChevronLeft,
   PiggyBank,
 } from "lucide-react";
 import {
@@ -28,19 +28,28 @@ const darkTheme = createTheme({
   palette: {
     mode: "dark",
     primary: { main: "#818cf8" },
-    background: { paper: "#1f2937" },
+    background: {
+      paper: "#111827",
+      default: "#0f172a",
+    },
   },
   components: {
     MuiTextField: {
       styleOverrides: {
         root: {
           "& .MuiOutlinedInput-root": {
-            borderRadius: "12px",
-            backgroundColor: "rgba(255, 255, 255, 0.05)",
-            "& fieldset": { borderColor: "rgba(255, 255, 255, 0.1)" },
+            borderRadius: "16px",
+            backgroundColor: "rgba(15, 23, 42, 0.4)",
+            transition: "all 0.2s ease-in-out",
+            "& fieldset": { borderColor: "rgba(255, 255, 255, 0.05)" },
+            "&:hover fieldset": { borderColor: "rgba(129, 140, 248, 0.3)" },
+            "&.Mui-focused fieldset": { borderColor: "#818cf8", borderWidth: "1.5px" },
+          },
+          "& .MuiInputLabel-root": {
+            fontSize: "0.85rem",
+            color: "rgba(148, 163, 184, 0.7)",
           },
         },
-        root: { marginBottom: "16px" },
       },
     },
   },
@@ -54,14 +63,13 @@ export default function PlanDashboard() {
   const [step, setStep] = useState(1);
   const [isCreating, setIsCreating] = useState(false);
 
-  // Initial State for New Plan
   const [newPlan, setNewPlan] = useState({
     name: "",
     planType: "",
     currentAge: 25,
     targetAge: 60,
-    money: 0, // Expense (IB) or Lump Sum (GB)
-    currentSavings: 0,
+    money: "",
+    currentSavings: "",
   });
 
   useEffect(() => {
@@ -72,12 +80,10 @@ export default function PlanDashboard() {
     try {
       const cookies = parseCookies();
       const account = JSON.parse(cookies.account || "{}");
-      const res = await axios.get(
-        `http://localhost:3001/plans/account/${account.id}`,
-        {
-          headers: { Authorization: `Bearer ${cookies.accessToken}` },
-        }
-      );
+      if (!account.id) return;
+      const res = await axios.get(`http://localhost:3001/plans/account/${account.id}`, {
+        headers: { Authorization: `Bearer ${cookies.accessToken}` },
+      });
       setPlans(res.data);
     } catch (err) {
       console.error(err);
@@ -87,25 +93,23 @@ export default function PlanDashboard() {
   };
 
   const handleFinalizeCreation = async () => {
-    if (!newPlan.name.trim() || newPlan.money <= 0) return;
+    if (!newPlan.name.trim() || !newPlan.money) return;
     setIsCreating(true);
     try {
       const cookies = parseCookies();
       const account = JSON.parse(cookies.account || "{}");
-
       const payload = {
         accountId: account.id,
         name: newPlan.name,
         planType: newPlan.planType,
         currentAge: Number(newPlan.currentAge),
-        retirementAge: Number(newPlan.targetAge), // Map targetAge to retirementAge field
+        retirementAge: Number(newPlan.targetAge),
         money: Number(newPlan.money),
         currentSavings: Number(newPlan.currentSavings),
-        expectedReturn: 7, // Default assumption
-        inflationRate: 3, // Default assumption
-        retirementYears: 25, // Default assumption
+        expectedReturn: 7,
+        inflationRate: 3,
+        retirementYears: 25,
       };
-
       const res = await axios.post("http://localhost:3001/plans", payload, {
         headers: { Authorization: `Bearer ${cookies.accessToken}` },
       });
@@ -118,78 +122,45 @@ export default function PlanDashboard() {
 
   const closeModal = () => {
     setIsModalOpen(false);
-    setStep(1);
-    setNewPlan({
-      name: "",
-      planType: "",
-      currentAge: 25,
-      targetAge: 60,
-      money: 0,
-      currentSavings: 0,
-    });
+    setTimeout(() => {
+      setStep(1);
+      setNewPlan({ name: "", planType: "", currentAge: 25, targetAge: 60, money: "", currentSavings: "" });
+    }, 300);
   };
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 pt-24 pb-12 px-4 font-sans">
-        <div className="max-w-6xl mx-auto">
-          {/* Header Section */}
-          <div className="flex flex-col md:flex-row justify-between items-start md:items-end mb-12 gap-6 animate-in slide-in-from-top-4 duration-500">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <Sparkles className="text-indigo-400" size={20} />
-                <span className="text-indigo-400 font-bold uppercase tracking-widest text-xs">
-                  Financial Workspace
-                </span>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-slate-200 pt-24 pb-12 px-6 relative overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 blur-[100px] -z-10" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/5 blur-[100px] -z-10" />
+
+        <div className="max-w-6xl mx-auto relative z-10">
+          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-[0.2em]">
+                <Sparkles size={16} /> Wealth Strategy
               </div>
-              <h1 className="text-4xl md:text-5xl font-black text-white tracking-tight mb-3">
-                พื้นที่วางแผนการเงิน
-              </h1>
-              <p className="text-gray-400 font-medium text-lg">
-                เริ่มต้นออกแบบอนาคตที่มั่นคง ด้วยเครื่องมือคำนวณอัจฉริยะ
-              </p>
+              <h1 className="text-4xl font-extrabold text-white tracking-tight">คลังแผนการเงิน</h1>
+              <p className="text-slate-400 font-medium">จัดการและติดตามเป้าหมายทางการเงินของคุณในที่เดียว</p>
             </div>
             <button
               onClick={() => setIsModalOpen(true)}
-              className="flex items-center gap-3 bg-indigo-600 hover:bg-indigo-500 text-white px-8 py-4 rounded-2xl font-bold transition-all shadow-lg shadow-indigo-600/20 active:scale-95 border border-indigo-400/30 group"
+              className="flex items-center gap-2 bg-white text-black hover:bg-slate-100 px-6 py-3 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-white/5"
             >
-              <Plus
-                size={24}
-                strokeWidth={3}
-                className="group-hover:rotate-90 transition-transform duration-300"
-              />
-              สร้างแผนใหม่
+              <Plus size={20} strokeWidth={3} /> สร้างแผนใหม่
             </button>
-          </div>
+          </header>
 
           {loading ? (
-            <div className="flex flex-col items-center justify-center h-80 rounded-[32px] bg-white/5 backdrop-blur-sm border border-white/5">
-              <CircularProgress
-                sx={{ color: "#818cf8" }}
-                size={50}
-                className="mb-6"
-              />
-              <p className="text-indigo-300 animate-pulse font-medium">
-                กำลังเชื่อมต่อข้อมูล...
-              </p>
+            <div className="h-64 flex flex-col items-center justify-center bg-slate-900/40 rounded-[2.5rem] border border-slate-800/50 backdrop-blur-md">
+              <CircularProgress size={32} thickness={5} />
             </div>
           ) : plans.length === 0 ? (
-            <div className="flex flex-col items-center justify-center h-96 rounded-[32px] bg-white/5 backdrop-blur-sm border border-dashed border-white/20 text-center px-4">
-              <div className="w-20 h-20 bg-gray-800 rounded-full flex items-center justify-center mb-6">
-                <Target className="text-gray-500" size={40} />
-              </div>
-              <h3 className="text-2xl font-bold text-white mb-2">
-                ยังไม่มีแผนการเงิน
-              </h3>
-              <p className="text-gray-400 mb-8 max-w-md">
-                กดปุ่มสร้างแผนใหม่ เพื่อเริ่มคำนวณเป้าหมายของคุณ
-              </p>
-              <button
-                onClick={() => setIsModalOpen(true)}
-                className="text-indigo-400 font-bold hover:text-indigo-300 transition-colors flex items-center gap-2"
-              >
-                เริ่มสร้างเลย <ArrowRight size={18} />
-              </button>
+            <div className="h-80 flex flex-col items-center justify-center bg-white/5 rounded-[2.5rem] border-2 border-dashed border-white/10 text-center backdrop-blur-sm">
+              <div className="p-4 bg-slate-800/50 rounded-full mb-4 text-slate-500"><Target size={32} /></div>
+              <p className="text-slate-400 font-medium mb-6">ยังไม่มีแผนการเงิน เริ่มสร้างแผนแรกได้เลย!</p>
+              <button onClick={() => setIsModalOpen(true)} className="text-indigo-400 font-bold flex items-center gap-2 hover:gap-3 transition-all">สร้างแผน <ArrowRight size={18} /></button>
             </div>
           ) : (
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
@@ -197,47 +168,21 @@ export default function PlanDashboard() {
                 <div
                   key={plan.id}
                   onClick={() => router.push(`/plan/${plan.id}`)}
-                  className="group relative bg-gray-800/40 backdrop-blur-xl p-8 rounded-[32px] border border-white/5 hover:border-indigo-500/50 hover:bg-gray-800/60 transition-all duration-300 cursor-pointer shadow-xl shadow-black/20 hover:shadow-indigo-500/10 hover:-translate-y-1"
+                  className="group p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.05] transition-all cursor-pointer relative overflow-hidden backdrop-blur-sm"
                 >
-                  <div className="flex justify-between items-start mb-6">
-                    <div
-                      className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg ${plan.planType === "ib"
-                          ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
-                          : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                        }`}
-                    >
-                      {plan.planType === "ib" ? (
-                        <Wallet size={28} />
-                      ) : (
-                        <Target size={28} />
-                      )}
+                  <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] opacity-10 transition-all group-hover:opacity-20 ${plan.planType === 'ib' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+                  <div className="flex justify-between items-start mb-8 relative z-10">
+                    <div className={`p-3 rounded-2xl ${plan.planType === 'ib' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                      {plan.planType === 'ib' ? <Wallet size={24} /> : <Target size={24} />}
                     </div>
-                    <div
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${plan.planType === "ib"
-                          ? "bg-blue-500/5 border-blue-500/20 text-blue-300"
-                          : "bg-emerald-500/5 border-emerald-500/20 text-emerald-300"
-                        }`}
-                    >
-                      {plan.planType === "ib" ? "Income Based" : "Goal Based"}
-                    </div>
-                  </div>
-
-                  <h3 className="text-2xl font-bold mb-2 text-white group-hover:text-indigo-300 transition-colors line-clamp-1">
-                    {plan.name}
-                  </h3>
-                  <p className="text-sm font-medium text-gray-500 mb-8">
-                    {plan.planType === "ib"
-                      ? "วางแผนเกษียณจากรายจ่ายต่อเดือน"
-                      : "วางแผนเก็บเงินก้อนเพื่อเป้าหมาย"}
-                  </p>
-
-                  <div className="flex justify-between items-center pt-5 border-t border-white/5">
-                    <span className="text-sm font-bold text-gray-400 group-hover:text-white transition-colors">
-                      ดูรายละเอียด
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white/5 px-3 py-1 rounded-lg">
+                      {plan.planType === 'ib' ? 'Income' : 'Goal'}
                     </span>
-                    <div className="w-8 h-8 rounded-full bg-white/5 flex items-center justify-center group-hover:bg-indigo-600 group-hover:text-white transition-all">
-                      <ArrowRight size={14} />
-                    </div>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">{plan.name}</h3>
+                  <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                    <span className="text-xs font-bold text-slate-500 group-hover:text-slate-300">Strategy Details</span>
+                    <ArrowRight size={16} className="text-slate-600 group-hover:text-white transition-all transform group-hover:translate-x-1" />
                   </div>
                 </div>
               ))}
@@ -245,270 +190,127 @@ export default function PlanDashboard() {
           )}
         </div>
 
-        {/* Improved Creation Modal */}
         <Dialog
           open={isModalOpen}
           onClose={closeModal}
+          maxWidth="sm"
+          fullWidth
           PaperProps={{
-            className:
-              "bg-[#111827] border border-white/10 rounded-[32px] text-white w-full max-w-2xl overflow-hidden shadow-2xl shadow-black/50",
-            style: { backgroundColor: "#111827", backgroundImage: "none" },
+            className: "bg-[#111827] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl",
+            style: { backgroundImage: "none", backgroundColor: "#111827" }
           }}
-          slotProps={{
-            backdrop: { className: "backdrop-blur-sm bg-black/60" },
-          }}
+          slotProps={{ backdrop: { style: { backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' } } }}
         >
-          <DialogContent className="p-0">
-            <div className="relative">
-              <button
-                onClick={closeModal}
-                className="absolute top-6 right-6 text-gray-500 hover:text-white p-2 hover:bg-white/10 rounded-full transition-colors z-10"
-              >
-                <X size={20} />
-              </button>
-
-              <div className="p-8 md:p-10">
-                {step === 1 ? (
-                  // Step 1: Select Type
-                  <div className="text-center animate-in fade-in slide-in-from-bottom-4 duration-300">
-                    <h2 className="text-3xl font-black mb-3 text-white">
-                      เลือกรูปแบบการคำนวณ
-                    </h2>
-                    <p className="text-gray-400 mb-8 font-medium">
-                      คุณต้องการวางแผนการเงินในลักษณะไหน?
-                    </p>
-                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
-                      {[
-                        {
-                          id: "ib",
-                          label: "Income-Based",
-                          subLabel: "เน้นรายจ่ายหลังเกษียณ",
-                          desc: "คำนวณจากไลฟ์สไตล์รายเดือนที่ต้องการใช้จริง",
-                          icon: Wallet,
-                          color: "blue",
-                        },
-                        {
-                          id: "gb",
-                          label: "Goal-Based",
-                          subLabel: "เน้นเงินก้อนเป้าหมาย",
-                          desc: "คำนวณเพื่อเก็บเงินซื้อบ้าน, รถ หรือแต่งงาน",
-                          icon: Target,
-                          color: "emerald",
-                        },
-                      ].map((btn) => (
-                        <button
-                          key={btn.id}
-                          onClick={() => {
-                            setNewPlan({ ...newPlan, planType: btn.id });
-                            setStep(2);
-                          }}
-                          className={`flex flex-col items-center gap-4 p-6 border border-white/10 rounded-[28px] bg-white/5 hover:bg-${btn.color}-500/10 hover:border-${btn.color}-500/50 transition-all group`}
-                        >
-                          <div
-                            className={`bg-${btn.color}-500/20 text-${btn.color}-400 p-4 rounded-2xl group-hover:scale-110 transition-transform`}
-                          >
-                            <btn.icon size={32} />
-                          </div>
-                          <div className="text-center">
-                            <h4 className="font-bold text-xl text-white">
-                              {btn.label}
-                            </h4>
-                            <p
-                              className={`text-xs font-bold uppercase tracking-wider text-${btn.color}-400 mb-2`}
-                            >
-                              {btn.subLabel}
-                            </p>
-                            <p className="text-sm text-gray-400">{btn.desc}</p>
-                          </div>
-                        </button>
-                      ))}
-                    </div>
-                  </div>
-                ) : (
-                  // Step 2: Input Details
-                  <div className="animate-in fade-in slide-in-from-right-4 duration-300">
-                    <div className="flex items-center gap-4 mb-6">
-                      <div
-                        onClick={() => setStep(1)}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${newPlan.planType === "ib"
-                            ? "bg-blue-500/20 text-blue-400"
-                            : "bg-emerald-500/20 text-emerald-400"
-                          }`}
-                      >
-                        {newPlan.planType === "ib" ? (
-                          <Wallet size={24} />
-                        ) : (
-                          <Target size={24} />
-                        )}
-                      </div>
-                      <div>
-                        <h2 className="text-2xl font-black text-white">
-                          กรอกข้อมูลแผน
-                        </h2>
-                        <p className="text-sm text-gray-400">
-                          {newPlan.planType === "ib"
-                            ? "Income-Based Plan"
-                            : "Goal-Based Plan"}
-                        </p>
-                      </div>
-                    </div>
-
-                    <div className="space-y-4">
-                      <div className="bg-gray-800/50 p-6 rounded-2xl border border-white/5">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase mb-4 flex items-center gap-2">
-                          <Sparkles size={14} /> ข้อมูลทั่วไป
-                        </h3>
-                        <TextField
-                          label="ชื่อแผนการเงิน"
-                          placeholder={
-                            newPlan.planType === "ib"
-                              ? "เช่น แผนเกษียณอายุ 60"
-                              : "เช่น เก็บเงินแต่งงาน"
-                          }
-                          value={newPlan.name}
-                          onChange={(e) =>
-                            setNewPlan({ ...newPlan, name: e.target.value })
-                          }
-                          fullWidth
-                          variant="outlined"
-                          autoFocus
-                        />
-                        <div className="grid grid-cols-2 gap-4">
-                          <TextField
-                            label="อายุปัจจุบัน"
-                            type="number"
-                            value={newPlan.currentAge}
-                            onChange={(e) =>
-                              setNewPlan({
-                                ...newPlan,
-                                currentAge: Number(e.target.value),
-                              })
-                            }
-                            fullWidth
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <span className="text-gray-500 text-xs">
-                                    ปี
-                                  </span>
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                          <TextField
-                            label={
-                              newPlan.planType === "ib"
-                                ? "อายุเกษียณ"
-                                : "อายุเมื่อถึงเป้า"
-                            }
-                            type="number"
-                            value={newPlan.targetAge}
-                            onChange={(e) =>
-                              setNewPlan({
-                                ...newPlan,
-                                targetAge: Number(e.target.value),
-                              })
-                            }
-                            fullWidth
-                            InputProps={{
-                              endAdornment: (
-                                <InputAdornment position="end">
-                                  <span className="text-gray-500 text-xs">
-                                    ปี
-                                  </span>
-                                </InputAdornment>
-                              ),
-                            }}
-                          />
-                        </div>
-                      </div>
-
-                      <div className="bg-gray-800/50 p-6 rounded-2xl border border-white/5">
-                        <h3 className="text-sm font-bold text-gray-400 uppercase mb-4 flex items-center gap-2">
-                          <DollarSign size={14} /> ตัวเลขทางการเงิน
-                        </h3>
-                        <TextField
-                          label={
-                            newPlan.planType === "ib"
-                              ? "รายจ่ายต่อเดือนหลังเกษียณ (ที่ต้องการ)"
-                              : "จำนวนเงินก้อนเป้าหมาย"
-                          }
-                          type="number"
-                          value={newPlan.money === 0 ? "" : newPlan.money}
-                          onChange={(e) =>
-                            setNewPlan({
-                              ...newPlan,
-                              money: Number(e.target.value),
-                            })
-                          }
-                          fullWidth
-                          placeholder="0"
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <span className="text-indigo-400 font-bold">
-                                  ฿
-                                </span>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                        <TextField
-                          label="เงินออมที่มีปัจจุบัน (เงินต้น)"
-                          type="number"
-                          value={
-                            newPlan.currentSavings === 0
-                              ? ""
-                              : newPlan.currentSavings
-                          }
-                          onChange={(e) =>
-                            setNewPlan({
-                              ...newPlan,
-                              currentSavings: Number(e.target.value),
-                            })
-                          }
-                          fullWidth
-                          placeholder="0"
-                          InputProps={{
-                            startAdornment: (
-                              <InputAdornment position="start">
-                                <span className="text-emerald-400 font-bold">
-                                  ฿
-                                </span>
-                              </InputAdornment>
-                            ),
-                          }}
-                        />
-                      </div>
-                    </div>
-
-                    <div className="flex gap-4 mt-8">
-                      <button
-                        onClick={() => setStep(1)}
-                        className="flex-1 py-4 font-bold text-gray-400 hover:text-white hover:bg-white/5 rounded-2xl transition-all"
-                      >
-                        ย้อนกลับ
-                      </button>
-                      <button
-                        disabled={!newPlan.name || !newPlan.money || isCreating}
-                        onClick={handleFinalizeCreation}
-                        className="flex-1 bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-2xl font-bold shadow-xl shadow-indigo-600/20 disabled:opacity-50 disabled:cursor-not-allowed transition-all flex items-center justify-center gap-2"
-                      >
-                        {isCreating ? (
-                          <>
-                            <Loader2 className="animate-spin" size={20} />{" "}
-                            กำลังสร้าง...
-                          </>
-                        ) : (
-                          "ยืนยันและสร้างแผน"
-                        )}
-                      </button>
-                    </div>
-                  </div>
-                )}
-              </div>
+          <div className="relative p-10">
+            <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+              <div className={`h-full bg-indigo-500 transition-all duration-700 ease-out ${step === 1 ? 'w-1/2' : 'w-full'}`} />
             </div>
-          </DialogContent>
+
+            <button onClick={closeModal} className="absolute top-8 right-8 text-slate-500 hover:text-white p-2 rounded-full hover:bg-white/5 transition-all"><X size={20} /></button>
+
+            {step === 1 ? (
+              <div className="animate-in fade-in zoom-in-95 duration-300">
+                <div className="mb-10">
+                  <h2 className="text-2xl font-black text-white mb-2">เลือกประเภทของแผน</h2>
+                  <p className="text-slate-400 font-medium">รูปแบบการคำนวณที่เหมาะกับเป้าหมายของคุณ</p>
+                </div>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {[
+                    { id: 'ib', title: 'Income-Based', desc: 'เน้นค่าใช้จ่ายรายเดือนหลังเกษียณ', icon: Wallet, color: 'blue' },
+                    { id: 'gb', title: 'Goal-Based', desc: 'เน้นเงินก้อนใหญ่ตามเป้าที่ตั้งไว้', icon: Target, color: 'emerald' }
+                  ].map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => { setNewPlan({ ...newPlan, planType: item.id }); setStep(2); }}
+                      className="group flex items-center gap-6 p-6 rounded-[24px] bg-white/[0.02] border border-white/5 hover:border-white/20 hover:bg-white/[0.05] cursor-pointer transition-all"
+                    >
+                      <div className={`p-4 rounded-2xl bg-slate-800 text-slate-400 group-hover:scale-110 transition-all`}>
+                        <item.icon size={24} />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-white text-lg">{item.title}</h4>
+                        <p className="text-xs text-slate-500 font-medium mt-1">{item.desc}</p>
+                      </div>
+                      <ArrowRight size={20} className="text-slate-700 group-hover:text-white translate-x-0 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  ))}
+                </div>
+              </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+                <button onClick={() => setStep(1)} className="flex items-center gap-2 text-slate-500 hover:text-white text-xs font-bold mb-8 transition-colors">
+                  <ChevronLeft size={14} /> ย้อนกลับ
+                </button>
+
+                <div className="mb-8 text-center">
+                  <h2 className="text-2xl font-black text-white mb-2">ระบุรายละเอียด</h2>
+                  <p className="text-slate-400 font-medium">ข้อมูลเพื่อสร้างกลยุทธ์เฉพาะคุณ</p>
+                </div>
+
+                <div className="space-y-6">
+                  <TextField
+                    label="ชื่อแผนการเงิน"
+                    value={newPlan.name}
+                    onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+                    fullWidth
+                    autoFocus
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField
+                      label="อายุปัจจุบัน"
+                      type="number"
+                      value={newPlan.currentAge}
+                      onChange={(e) => setNewPlan({ ...newPlan, currentAge: Number(e.target.value) })}
+                      InputProps={{ endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">ปี</span></InputAdornment> }}
+                    />
+                    <TextField
+                      label={newPlan.planType === 'ib' ? "อายุเกษียณ" : "เป้าหมายที่อายุ"}
+                      type="number"
+                      value={newPlan.targetAge}
+                      onChange={(e) => setNewPlan({ ...newPlan, targetAge: Number(e.target.value) })}
+                      InputProps={{ endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">ปี</span></InputAdornment> }}
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5">
+                    <TextField
+                      label={newPlan.planType === 'ib' ? "รายจ่ายรายเดือนที่ต้องการ" : "เงินก้อนเป้าหมาย"}
+                      type="number"
+                      value={newPlan.money}
+                      onChange={(e) => setNewPlan({ ...newPlan, money: e.target.value })}
+                      fullWidth
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start"><DollarSign size={16} className="text-indigo-400" /></InputAdornment>,
+                        endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">บาท</span></InputAdornment>
+                      }}
+                    />
+                  </div>
+
+                  <TextField
+                    label="เงินเก็บปัจจุบัน"
+                    type="number"
+                    value={newPlan.currentSavings}
+                    onChange={(e) => setNewPlan({ ...newPlan, currentSavings: e.target.value })}
+                    fullWidth
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><PiggyBank size={16} className="text-emerald-400" /></InputAdornment>,
+                      endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">บาท</span></InputAdornment>
+                    }}
+                  />
+                </div>
+
+                <button
+                  disabled={!newPlan.name || !newPlan.money || isCreating}
+                  onClick={handleFinalizeCreation}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-[20px] font-bold mt-10 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
+                >
+                  {isCreating ? <Loader2 className="animate-spin" size={20} /> : "ยืนยันและสร้างแผน"}
+                </button>
+              </div>
+            )}
+          </div>
         </Dialog>
       </div>
     </ThemeProvider>

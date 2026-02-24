@@ -4,6 +4,7 @@ import NavBar from "@/components/NavBar/page";
 import Footer from "@/components/Footer/landingFooter";
 import "@/styles/globals.css";
 import ToolLayout from "@/components/Sidebar/toolSidebar";
+import 'katex/dist/katex.min.css';
 
 export default function RootLayout({
   children,
