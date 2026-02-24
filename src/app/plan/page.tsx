@@ -201,11 +201,10 @@ export default function PlanDashboard() {
                 >
                   <div className="flex justify-between items-start mb-6">
                     <div
-                      className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg ${
-                        plan.planType === "ib"
+                      className={`w-14 h-14 rounded-2xl flex items-center justify-center transition-transform group-hover:scale-110 shadow-lg ${plan.planType === "ib"
                           ? "bg-blue-500/10 text-blue-400 border border-blue-500/20"
                           : "bg-emerald-500/10 text-emerald-400 border border-emerald-500/20"
-                      }`}
+                        }`}
                     >
                       {plan.planType === "ib" ? (
                         <Wallet size={28} />
@@ -214,11 +213,10 @@ export default function PlanDashboard() {
                       )}
                     </div>
                     <div
-                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${
-                        plan.planType === "ib"
+                      className={`px-3 py-1 rounded-full text-[10px] font-bold uppercase tracking-wider border ${plan.planType === "ib"
                           ? "bg-blue-500/5 border-blue-500/20 text-blue-300"
                           : "bg-emerald-500/5 border-emerald-500/20 text-emerald-300"
-                      }`}
+                        }`}
                     >
                       {plan.planType === "ib" ? "Income Based" : "Goal Based"}
                     </div>
@@ -332,11 +330,10 @@ export default function PlanDashboard() {
                     <div className="flex items-center gap-4 mb-6">
                       <div
                         onClick={() => setStep(1)}
-                        className={`w-12 h-12 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${
-                          newPlan.planType === "ib"
+                        className={`w-12 h-12 rounded-2xl flex items-center justify-center cursor-pointer hover:opacity-80 transition-opacity ${newPlan.planType === "ib"
                             ? "bg-blue-500/20 text-blue-400"
                             : "bg-emerald-500/20 text-emerald-400"
-                        }`}
+                          }`}
                       >
                         {newPlan.planType === "ib" ? (
                           <Wallet size={24} />

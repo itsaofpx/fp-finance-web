@@ -1,8 +1,9 @@
 "use client";
-import { Button, TextField, Alert, CircularProgress } from "@mui/material";
+import { Button, TextField, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DisclaimerFooter from "@/components/Footer/disclaimerFooter";
+import CloseIcon from "@mui/icons-material/Close";
 
 export interface IAverageCostInvestResponse {
   currentTotalCost: number;
@@ -26,6 +27,7 @@ const AverageCostCalculator = () => {
   const [result, setResult] = useState<IAverageCostInvestResponse | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openFormula, setOpenFormula] = useState(false);
 
   const handleInputChange =
     (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -38,6 +40,10 @@ const AverageCostCalculator = () => {
 
   const handleBackClick = () => {
     router.push("/tool");
+  };
+
+  const handleFormulaClick = () => {
+    setOpenFormula(!openFormula);
   };
 
   const validateForm = () => {
@@ -181,7 +187,7 @@ const AverageCostCalculator = () => {
       <div className="max-w-4xl mx-auto">
         <div className="bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
           {/* Back Arrow Header */}
-          <div className="p-6 pb-0">
+          <div className="p-6 pb-0 flex justify-between">
             <button
               onClick={handleBackClick}
               className="inline-flex items-center space-x-2 text-gray-400 hover:text-gray-200 transition-colors duration-200 group"
@@ -203,7 +209,142 @@ const AverageCostCalculator = () => {
               </div>
               <span className="font-medium">กลับไปเครื่องมือ</span>
             </button>
+            <button
+              onClick={handleFormulaClick}
+              className="inline-flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+            >
+              <span className="font-medium">สูตรการคำนวณ</span>
+            </button>
           </div>
+
+          {/* Formula Dialog */}
+          <Dialog
+            open={openFormula}
+            onClose={() => setOpenFormula(false)}
+            maxWidth="sm"
+            fullWidth
+            PaperProps={{
+              sx: {
+                backgroundColor: "#1F2937",
+                backgroundImage: "none",
+                color: "#E5E7EB",
+                borderRadius: "12px",
+                border: "1px solid #374151",
+              },
+            }}
+          >
+            <DialogTitle
+              sx={{
+                display: "flex",
+                justifyContent: "space-between",
+                alignItems: "center",
+                borderBottom: "1px solid #374151",
+                fontSize: "1.25rem",
+                fontWeight: "bold",
+              }}
+            >
+              📐 สูตรการคำนวณ
+              <IconButton
+                onClick={() => setOpenFormula(false)}
+                sx={{ color: "#9CA3AF" }}
+              >
+                <CloseIcon />
+              </IconButton>
+            </DialogTitle>
+            <DialogContent sx={{ py: 3 }}>
+              <div className="space-y-4 text-sm">
+                <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-700/30">
+                  <div className="font-semibold text-blue-300 mb-1">
+                    1. มูลค่าการลงทุนเดิม
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    จำนวนหุ้นปัจจุบัน × ราคาเฉลี่ยปัจจุบัน
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-green-900/20 border border-green-700/30">
+                  <div className="font-semibold text-green-300 mb-1">
+                    2. หุ้นที่ซื้อเพิ่ม
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    เงินลงทุนเพิ่ม ÷ ราคาตลาดปัจจุบัน
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-purple-900/20 border border-purple-700/30">
+                  <div className="font-semibold text-purple-300 mb-1">
+                    3. จำนวนหุ้นรวม
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    หุ้นเดิม + หุ้นที่ซื้อเพิ่ม
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-yellow-900/20 border border-yellow-700/30">
+                  <div className="font-semibold text-yellow-300 mb-1">
+                    4. มูลค่าการลงทุนรวม
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    มูลค่าการลงทุนเดิม + เงินลงทุนเพิ่ม
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-orange-900/20 border border-orange-700/30">
+                  <div className="font-semibold text-orange-300 mb-1">
+                    5. ราคาเฉลี่ยใหม่ต่อหุ้น
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    มูลค่าการลงทุนรวม ÷ จำนวนหุ้นรวม
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-red-900/20 border border-red-700/30">
+                  <div className="font-semibold text-red-300 mb-1">
+                    6. มูลค่าพอร์ตปัจจุบัน
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    ราคาตลาดปัจจุบัน × จำนวนหุ้นรวม
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-700/30">
+                  <div className="font-semibold text-emerald-300 mb-1">
+                    7. กำไร/ขาดทุน
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    (ราคาตลาดปัจจุบัน × จำนวนหุ้นรวม) − มูลค่าการลงทุนรวม
+                  </div>
+                </div>
+
+                <div className="p-3 rounded-lg bg-pink-900/20 border border-pink-700/30">
+                  <div className="font-semibold text-pink-300 mb-1">
+                    8. เปอร์เซ็นต์กำไร/ขาดทุน
+                  </div>
+                  <div className="text-gray-300 font-mono">
+                    (กำไร/ขาดทุน ÷ มูลค่าการลงทุนรวม) × 100
+                  </div>
+                </div>
+              </div>
+            </DialogContent>
+            <DialogActions
+              sx={{
+                borderTop: "1px solid #374151",
+                p: 2,
+              }}
+            >
+              <Button
+                onClick={() => setOpenFormula(false)}
+                sx={{
+                  color: "#E5E7EB",
+                  "&:hover": {
+                    backgroundColor: "rgba(75, 85, 99, 0.3)",
+                  },
+                }}
+              >
+                ปิด
+              </Button>
+            </DialogActions>
+          </Dialog>
 
           {/* Main Header */}
           <div className="text-center my-8">

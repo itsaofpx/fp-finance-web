@@ -11,6 +11,7 @@ import {
 import { useState } from "react";
 import { useRouter } from "next/navigation";
 import DisclaimerFooter from "@/components/Footer/disclaimerFooter";
+import FormulaDialog from "@/components/FormulaDialog";
 
 interface IDividendResult {
   ticker: string;
@@ -37,6 +38,7 @@ const DividendCalculator = () => {
   const [result, setResult] = useState<IDividendResult | null>(null);
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openFormula, setOpenFormula] = useState(false);
 
   const handleStockTypeChange = (
     event: React.ChangeEvent<HTMLInputElement>
@@ -181,7 +183,7 @@ const DividendCalculator = () => {
       <div className="max-w-4xl mx-auto">
         <div className="bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
           {/* Back Arrow Header */}
-          <div className="p-6 pb-0">
+          <div className="p-6 pb-0 flex justify-between">
             <button
               onClick={handleBackClick}
               className="inline-flex items-center space-x-2 text-gray-400 hover:text-gray-200 transition-colors duration-200 group"
@@ -203,7 +205,46 @@ const DividendCalculator = () => {
               </div>
               <span className="font-medium">กลับไปเครื่องมือ</span>
             </button>
+            <button
+              onClick={() => setOpenFormula(!openFormula)}
+              className="inline-flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+            >
+              <span className="font-medium">สูตรการคำนวณ</span>
+            </button>
           </div>
+
+          {/* Formula Dialog */}
+          <FormulaDialog
+            open={openFormula}
+            onClose={() => setOpenFormula(false)}
+            formulas={[
+              {
+                title: "1. หุ้นที่ต้องการ",
+                formula: "Shares Needed = Dividend Goal ÷ Annual Dividend Per Share",
+                color: "blue",
+                textColor: "text-blue-300",
+              },
+              {
+                title: "2. เงินลงทุนที่ต้องการ",
+                formula: "Investment Needed = Shares × Current Share Price",
+                color: "green",
+                textColor: "text-green-300",
+              },
+              {
+                title: "3. เงินปันผลรายเดือน",
+                formula: "Monthly Income = (Dividend Per Share × Shares) ÷ 12",
+                color: "purple",
+                textColor: "text-purple-300",
+              },
+              {
+                title: "4. เงินปันผลรายปี",
+                formula: "Annual Income = Dividend Per Share × Shares",
+                color: "yellow",
+                textColor: "text-yellow-300",
+              },
+            ]}
+            title="📐 สูตรคำนวณปันผล"
+          />
 
           {/* Main Header */}
           <div className="text-center my-8">

@@ -1,6 +1,7 @@
 "use client";
 import { useState } from "react";
 import { TextField, Button, Alert, CircularProgress } from "@mui/material";
+import FormulaDialog from "@/components/FormulaDialog";
 import { useRouter } from "next/navigation";
 import DisclaimerFooter from "@/components/Footer/disclaimerFooter";
 
@@ -33,6 +34,7 @@ const StockProfitCalculator = () => {
   );
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  const [openFormula, setOpenFormula] = useState(false);
 
   const handleInputChange =
     (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
@@ -140,7 +142,7 @@ const StockProfitCalculator = () => {
       <div className="max-w-4xl mx-auto">
         <div className="bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
           {/* Back Arrow Header */}
-          <div className="p-6 pb-0">
+          <div className="p-6 pb-0 flex justify-between">
             <button
               onClick={handleBackClick}
               className="inline-flex items-center space-x-2 text-gray-400 hover:text-gray-200 transition-colors duration-200 group"
@@ -162,7 +164,46 @@ const StockProfitCalculator = () => {
               </div>
               <span className="font-medium">กลับไปเครื่องมือ</span>
             </button>
+            <button
+              onClick={() => setOpenFormula(!openFormula)}
+              className="inline-flex items-center space-x-2 text-white bg-blue-600 hover:bg-blue-700 px-4 py-2 rounded-lg font-medium transition-colors duration-200"
+            >
+              <span className="font-medium">สูตรการคำนวณ</span>
+            </button>
           </div>
+
+          {/* Formula Dialog */}
+          <FormulaDialog
+            open={openFormula}
+            onClose={() => setOpenFormula(false)}
+            formulas={[
+              {
+                title: "1. หุ้นที่ซื้อ",
+                formula: "Shares = Investment ÷ Current Price",
+                color: "blue",
+                textColor: "text-blue-300",
+              },
+              {
+                title: "2. กำไรที่คาดหวัง",
+                formula: "Potential Profit = (Target Price - Current Price) × Shares",
+                color: "green",
+                textColor: "text-green-300",
+              },
+              {
+                title: "3. เปอร์เซ็นต์กำไร",
+                formula: "Profit % = (Potential Profit ÷ Investment) × 100",
+                color: "purple",
+                textColor: "text-purple-300",
+              },
+              {
+                title: "4. มูลค่าตามเป้าหมาย",
+                formula: "Value at Target = Target Price × Shares",
+                color: "yellow",
+                textColor: "text-yellow-300",
+              },
+            ]}
+            title="📐 สูตรเป้าหมายกำไร"
+          />
 
           {/* Main Header */}
           <div className="text-center my-8">

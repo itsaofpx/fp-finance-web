@@ -43,7 +43,7 @@ const NavBar = () => {
 
   // Anchor สำหรับ Dropdown ต่างๆ
   const [learningAnchor, setLearningAnchor] = useState<null | HTMLElement>(
-    null
+    null,
   );
   const [profileAnchor, setProfileAnchor] = useState<null | HTMLElement>(null);
 
@@ -115,6 +115,21 @@ const NavBar = () => {
             </button>
 
             <button
+              onClick={() => handleNavigation("/tool")}
+              className="text-gray-300 hover:text-white px-3 py-2"
+            >
+              เครื่องมือคำนวณ
+            </button>
+            {isLogin && (
+              <button
+                onClick={() => handleNavigation("/plan")}
+                className="text-gray-300 hover:text-white px-3 py-2"
+              >
+                แผนการลงทุน
+              </button>
+            )}
+
+            <button
               onClick={() => handleNavigation("/pricing")}
               className="text-gray-300 hover:text-white px-3 py-2"
             >
@@ -177,14 +192,14 @@ const NavBar = () => {
         open={Boolean(learningAnchor)}
         onClose={() => setLearningAnchor(null)}
       >
-        <MenuItem onClick={() => handleNavigation("/tool")}>
+        {/* <MenuItem onClick={() => handleNavigation("/tool")}>
           <Wrench className="w-4 h-4 mr-3 text-emerald-400" /> เครื่องมือคำนวณ
         </MenuItem>
         {isLogin && (
           <MenuItem onClick={() => handleNavigation("/plan")}>
             <Calendar className="w-4 h-4 mr-3 text-purple-400" /> แผนการลงทุน
           </MenuItem>
-        )}
+        )} */}
         <MenuItem onClick={() => handleNavigation("/glossary")}>
           <BookOpen className="w-4 h-4 mr-3 text-blue-400" /> คำศัพท์ลงทุน
         </MenuItem>
@@ -229,12 +244,12 @@ const NavBar = () => {
             >
               คำศัพท์ลงทุน
             </button>
-            <button
+            {/* <button
               onClick={() => handleNavigation("/tool")}
               className="block w-full text-left p-2 text-gray-300"
             >
               เครื่องมือคำนวณ
-            </button>
+            </button> */}
             <button
               onClick={() => handleNavigation("/pricing")}
               className="block w-full text-left p-2 text-gray-300"
