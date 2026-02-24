@@ -1,302 +1,318 @@
 "use client";
-
+import React, { useState, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useEffect, useState } from "react";
 import { parseCookies } from "nookies";
+import axios from "axios";
+import {
+  Plus,
+  Target,
+  Wallet,
+  ArrowRight,
+  X,
+  Loader2,
+  Sparkles,
+  DollarSign,
+  ChevronLeft,
+  PiggyBank,
+} from "lucide-react";
+import {
+  Dialog,
+  DialogContent,
+  CircularProgress,
+  TextField,
+  InputAdornment,
+} from "@mui/material";
+import { createTheme, ThemeProvider } from "@mui/material/styles";
 
-export default function PlanPage() {
+const darkTheme = createTheme({
+  palette: {
+    mode: "dark",
+    primary: { main: "#818cf8" },
+    background: {
+      paper: "#111827",
+      default: "#0f172a",
+    },
+  },
+  components: {
+    MuiTextField: {
+      styleOverrides: {
+        root: {
+          "& .MuiOutlinedInput-root": {
+            borderRadius: "16px",
+            backgroundColor: "rgba(15, 23, 42, 0.4)",
+            transition: "all 0.2s ease-in-out",
+            "& fieldset": { borderColor: "rgba(255, 255, 255, 0.05)" },
+            "&:hover fieldset": { borderColor: "rgba(129, 140, 248, 0.3)" },
+            "&.Mui-focused fieldset": { borderColor: "#818cf8", borderWidth: "1.5px" },
+          },
+          "& .MuiInputLabel-root": {
+            fontSize: "0.85rem",
+            color: "rgba(148, 163, 184, 0.7)",
+          },
+        },
+      },
+    },
+  },
+});
+
+export default function PlanDashboard() {
   const router = useRouter();
-  const [isAuthenticated, setIsAuthenticated] = useState(false);
+  const [plans, setPlans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const [isModalOpen, setIsModalOpen] = useState(false);
+  const [step, setStep] = useState(1);
+  const [isCreating, setIsCreating] = useState(false);
+
+  const [newPlan, setNewPlan] = useState({
+    name: "",
+    planType: "",
+    currentAge: 25,
+    targetAge: 60,
+    money: "",
+    currentSavings: "",
+  });
 
   useEffect(() => {
-    const checkAuth = () => {
+    fetchPlans();
+  }, []);
+
+  const fetchPlans = async () => {
+    try {
       const cookies = parseCookies();
-      const accessToken = cookies.accessToken;
-      
-      if (!accessToken) {
-        router.push("/");
-      } else {
-        setIsAuthenticated(true);
-      }
-    };
+      const account = JSON.parse(cookies.account || "{}");
+      if (!account.id) return;
+      const res = await axios.get(`http://localhost:3001/plans/account/${account.id}`, {
+        headers: { Authorization: `Bearer ${cookies.accessToken}` },
+      });
+      setPlans(res.data);
+    } catch (err) {
+      console.error(err);
+    } finally {
+      setLoading(false);
+    }
+  };
 
-    checkAuth();
-  }, [router]);
+  const handleFinalizeCreation = async () => {
+    if (!newPlan.name.trim() || !newPlan.money) return;
+    setIsCreating(true);
+    try {
+      const cookies = parseCookies();
+      const account = JSON.parse(cookies.account || "{}");
+      const payload = {
+        accountId: account.id,
+        name: newPlan.name,
+        planType: newPlan.planType,
+        currentAge: Number(newPlan.currentAge),
+        retirementAge: Number(newPlan.targetAge),
+        money: Number(newPlan.money),
+        currentSavings: Number(newPlan.currentSavings),
+        expectedReturn: 7,
+        inflationRate: 3,
+        retirementYears: 25,
+      };
+      const res = await axios.post("http://localhost:3001/plans", payload, {
+        headers: { Authorization: `Bearer ${cookies.accessToken}` },
+      });
+      router.push(`/plan/${res.data.id}`);
+    } catch (err) {
+      console.error(err);
+      setIsCreating(false);
+    }
+  };
 
-  if (!isAuthenticated) {
-    return (
-      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 flex items-center justify-center">
-        <div className="text-center">
-          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-slate-700 mx-auto"></div>
-          <p className="mt-4 text-gray-600 dark:text-gray-400">กำลังตรวจสอบสิทธิ์...</p>
-        </div>
-      </div>
-    );
-  }
+  const closeModal = () => {
+    setIsModalOpen(false);
+    setTimeout(() => {
+      setStep(1);
+      setNewPlan({ name: "", planType: "", currentAge: 25, targetAge: 60, money: "", currentSavings: "" });
+    }, 300);
+  };
 
   return (
-    <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 mt-16">
-      <div className="container mx-auto px-4 py-12">
-        {/* Header Section */}
-        <div className="text-center mb-12">
-          <h1 className="text-4xl md:text-5xl font-bold text-gray-800 dark:text-gray-100 mb-4">
-            เลือกรูปแบบการวางแผนการเงิน
-          </h1>
-          <p className="text-lg text-gray-600 dark:text-gray-400 max-w-3xl mx-auto">
-            เราเตรียมเครื่องมือวางแผนการเงิน 2 รูปแบบให้คุณเลือก 
-            ตามความเหมาะสมกับเป้าหมายและสถานการณ์ของคุณ
-          </p>
-        </div>
+    <ThemeProvider theme={darkTheme}>
+      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-slate-200 pt-24 pb-12 px-6 relative overflow-hidden">
+        {/* Decorative Background Elements */}
+        <div className="absolute top-0 right-0 w-[400px] h-[400px] bg-indigo-500/5 blur-[100px] -z-10" />
+        <div className="absolute bottom-0 left-0 w-[400px] h-[400px] bg-emerald-500/5 blur-[100px] -z-10" />
 
-        {/* Planning Options */}
-        <div className="grid md:grid-cols-2 gap-8 max-w-6xl mx-auto">
-          {/* Income-Based Planning */}
-          <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-gray-200/50 dark:border-gray-700/50 hover:border-blue-400 dark:hover:border-blue-500 transition-all duration-300 overflow-hidden hover:shadow-2xl hover:scale-105 cursor-pointer"
-            onClick={() => router.push("/plan/income-based")}
-          >
-            {/* Header with Gradient */}
-            <div className="bg-gradient-to-br from-blue-600 to-blue-800 p-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-16 -translate-x-16"></div>
-              
-              <div className="relative">
-                <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4">
-                  <span className="text-5xl">💰</span>
-                </div>
-                <h2 className="text-3xl font-bold text-white mb-2">
-                  Income-Based Planning
-                </h2>
-                <p className="text-blue-100 text-lg">
-                  วางแผนตามรายได้
-                </p>
+        <div className="max-w-6xl mx-auto relative z-10">
+          <header className="flex flex-col md:flex-row justify-between items-start md:items-center mb-16 gap-6">
+            <div className="space-y-2">
+              <div className="flex items-center gap-2 text-indigo-400 font-bold text-xs uppercase tracking-[0.2em]">
+                <Sparkles size={16} /> Wealth Strategy
               </div>
+              <h1 className="text-4xl font-extrabold text-white tracking-tight">คลังแผนการเงิน</h1>
+              <p className="text-slate-400 font-medium">จัดการและติดตามเป้าหมายทางการเงินของคุณในที่เดียว</p>
             </div>
+            <button
+              onClick={() => setIsModalOpen(true)}
+              className="flex items-center gap-2 bg-white text-black hover:bg-slate-100 px-6 py-3 rounded-2xl font-bold transition-all active:scale-95 shadow-lg shadow-white/5"
+            >
+              <Plus size={20} strokeWidth={3} /> สร้างแผนใหม่
+            </button>
+          </header>
 
-            {/* Content */}
-            <div className="p-8">
-              <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg leading-relaxed">
-                เหมาะสำหรับการวางแผนเกษียณโดยอิงจากค่าใช้จ่ายรายเดือนที่ต้องการในอนาคต 
-                คำนวณเงินออมรายเดือนที่ต้องการ โดยคำนึงถึงเงินเฟ้อ ผลตอบแทน และเงินออมปัจจุบัน
-              </p>
-
-              {/* Features */}
-              <div className="space-y-3 mb-8">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-blue-600 dark:text-blue-400 text-sm">✓</span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    กำหนดค่าใช้จ่ายรายเดือนเป้าหมายหลังเกษียณ
-                  </span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-blue-600 dark:text-blue-400 text-sm">✓</span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    คำนวณเงินออมรายเดือนที่ต้องการ
-                  </span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-blue-100 dark:bg-blue-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-blue-600 dark:text-blue-400 text-sm">✓</span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    ประเมินมูลค่าอนาคตของเงินออมปัจจุบัน
-                  </span>
-                </div>
-              </div>
-
-              {/* CTA */}
-              <div className="flex items-center justify-between p-4 bg-blue-50 dark:bg-blue-900/20 rounded-xl border border-blue-200/50 dark:border-blue-800/50 group-hover:bg-blue-100 dark:group-hover:bg-blue-900/30 transition-colors">
-                <span className="text-blue-700 dark:text-blue-400 font-semibold">
-                  เริ่มคำนวณเงินออมเพื่อเกษียณ
-                </span>
-                <svg 
-                  className="w-6 h-6 text-blue-600 dark:text-blue-400 group-hover:translate-x-2 transition-transform" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+          {loading ? (
+            <div className="h-64 flex flex-col items-center justify-center bg-slate-900/40 rounded-[2.5rem] border border-slate-800/50 backdrop-blur-md">
+              <CircularProgress size={32} thickness={5} />
+            </div>
+          ) : plans.length === 0 ? (
+            <div className="h-80 flex flex-col items-center justify-center bg-white/5 rounded-[2.5rem] border-2 border-dashed border-white/10 text-center backdrop-blur-sm">
+              <div className="p-4 bg-slate-800/50 rounded-full mb-4 text-slate-500"><Target size={32} /></div>
+              <p className="text-slate-400 font-medium mb-6">ยังไม่มีแผนการเงิน เริ่มสร้างแผนแรกได้เลย!</p>
+              <button onClick={() => setIsModalOpen(true)} className="text-indigo-400 font-bold flex items-center gap-2 hover:gap-3 transition-all">สร้างแผน <ArrowRight size={18} /></button>
+            </div>
+          ) : (
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6">
+              {plans.map((plan: any) => (
+                <div
+                  key={plan.id}
+                  onClick={() => router.push(`/plan/${plan.id}`)}
+                  className="group p-8 rounded-[2.5rem] bg-white/[0.03] border border-white/5 hover:border-indigo-500/40 hover:bg-white/[0.05] transition-all cursor-pointer relative overflow-hidden backdrop-blur-sm"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
-              </div>
+                  <div className={`absolute top-0 right-0 w-32 h-32 blur-[60px] opacity-10 transition-all group-hover:opacity-20 ${plan.planType === 'ib' ? 'bg-blue-500' : 'bg-emerald-500'}`} />
+                  <div className="flex justify-between items-start mb-8 relative z-10">
+                    <div className={`p-3 rounded-2xl ${plan.planType === 'ib' ? 'bg-blue-500/10 text-blue-400' : 'bg-emerald-500/10 text-emerald-400'}`}>
+                      {plan.planType === 'ib' ? <Wallet size={24} /> : <Target size={24} />}
+                    </div>
+                    <span className="text-[10px] font-black uppercase tracking-wider text-slate-500 bg-white/5 px-3 py-1 rounded-lg">
+                      {plan.planType === 'ib' ? 'Income' : 'Goal'}
+                    </span>
+                  </div>
+                  <h3 className="text-xl font-bold text-white mb-2 group-hover:text-indigo-300 transition-colors">{plan.name}</h3>
+                  <div className="flex items-center justify-between pt-6 border-t border-white/5">
+                    <span className="text-xs font-bold text-slate-500 group-hover:text-slate-300">Strategy Details</span>
+                    <ArrowRight size={16} className="text-slate-600 group-hover:text-white transition-all transform group-hover:translate-x-1" />
+                  </div>
+                </div>
+              ))}
             </div>
-          </div>
+          )}
+        </div>
 
-          {/* Goal-Based Planning */}
-          <div className="group bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-2xl shadow-xl border-2 border-gray-200/50 dark:border-gray-700/50 hover:border-emerald-400 dark:hover:border-emerald-500 transition-all duration-300 overflow-hidden hover:shadow-2xl hover:scale-105 cursor-pointer"
-            onClick={() => router.push("/plan/goal-based")}
-          >
-            {/* Header with Gradient */}
-            <div className="bg-gradient-to-br from-emerald-600 to-emerald-800 p-8 relative overflow-hidden">
-              <div className="absolute top-0 right-0 w-40 h-40 bg-white/10 rounded-full -translate-y-20 translate-x-20"></div>
-              <div className="absolute bottom-0 left-0 w-32 h-32 bg-white/10 rounded-full translate-y-16 -translate-x-16"></div>
-              
-              <div className="relative">
-                <div className="w-20 h-20 bg-white/20 backdrop-blur-md rounded-2xl flex items-center justify-center mb-4">
-                  <span className="text-5xl">🎯</span>
-                </div>
-                <h2 className="text-3xl font-bold text-white mb-2">
-                  Goal-Based Planning
-                </h2>
-                <p className="text-emerald-100 text-lg">
-                  วางแผนตามเป้าหมาย
-                </p>
-              </div>
+        <Dialog
+          open={isModalOpen}
+          onClose={closeModal}
+          maxWidth="sm"
+          fullWidth
+          PaperProps={{
+            className: "bg-[#111827] border border-white/10 rounded-[2.5rem] overflow-hidden shadow-2xl backdrop-blur-xl",
+            style: { backgroundImage: "none", backgroundColor: "#111827" }
+          }}
+          slotProps={{ backdrop: { style: { backgroundColor: 'rgba(0, 0, 0, 0.7)', backdropFilter: 'blur(4px)' } } }}
+        >
+          <div className="relative p-10">
+            <div className="absolute top-0 left-0 w-full h-1 bg-white/5">
+              <div className={`h-full bg-indigo-500 transition-all duration-700 ease-out ${step === 1 ? 'w-1/2' : 'w-full'}`} />
             </div>
 
-            {/* Content */}
-            <div className="p-8">
-              <p className="text-gray-700 dark:text-gray-300 mb-6 text-lg leading-relaxed">
-                เหมาะสำหรับผู้ที่มีเป้าหมายการเงินที่ชัดเจน 
-                เช่น เกษียณ ซื้อบ้าน การศึกษาบุตร หรือการลงทุน
-              </p>
+            <button onClick={closeModal} className="absolute top-8 right-8 text-slate-500 hover:text-white p-2 rounded-full hover:bg-white/5 transition-all"><X size={20} /></button>
 
-              {/* Features */}
-              <div className="space-y-3 mb-8">
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-emerald-600 dark:text-emerald-400 text-sm">✓</span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    เลือกตามเป้าหมายชีวิต
-                  </span>
+            {step === 1 ? (
+              <div className="animate-in fade-in zoom-in-95 duration-300">
+                <div className="mb-10">
+                  <h2 className="text-2xl font-black text-white mb-2">เลือกประเภทของแผน</h2>
+                  <p className="text-slate-400 font-medium">รูปแบบการคำนวณที่เหมาะกับเป้าหมายของคุณ</p>
                 </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-emerald-600 dark:text-emerald-400 text-sm">✓</span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    คำนวณเงินออมที่ต้องการ
-                  </span>
-                </div>
-                <div className="flex items-start gap-3">
-                  <div className="w-6 h-6 bg-emerald-100 dark:bg-emerald-900/30 rounded-full flex items-center justify-center flex-shrink-0 mt-0.5">
-                    <span className="text-emerald-600 dark:text-emerald-400 text-sm">✓</span>
-                  </div>
-                  <span className="text-gray-600 dark:text-gray-400">
-                    วิเคราะห์การเติบโต
-                  </span>
+
+                <div className="grid grid-cols-1 gap-4">
+                  {[
+                    { id: 'ib', title: 'Income-Based', desc: 'เน้นค่าใช้จ่ายรายเดือนหลังเกษียณ', icon: Wallet, color: 'blue' },
+                    { id: 'gb', title: 'Goal-Based', desc: 'เน้นเงินก้อนใหญ่ตามเป้าที่ตั้งไว้', icon: Target, color: 'emerald' }
+                  ].map((item) => (
+                    <div
+                      key={item.id}
+                      onClick={() => { setNewPlan({ ...newPlan, planType: item.id }); setStep(2); }}
+                      className="group flex items-center gap-6 p-6 rounded-[24px] bg-white/[0.02] border border-white/5 hover:border-white/20 hover:bg-white/[0.05] cursor-pointer transition-all"
+                    >
+                      <div className={`p-4 rounded-2xl bg-slate-800 text-slate-400 group-hover:scale-110 transition-all`}>
+                        <item.icon size={24} />
+                      </div>
+                      <div className="flex-1">
+                        <h4 className="font-bold text-white text-lg">{item.title}</h4>
+                        <p className="text-xs text-slate-500 font-medium mt-1">{item.desc}</p>
+                      </div>
+                      <ArrowRight size={20} className="text-slate-700 group-hover:text-white translate-x-0 group-hover:translate-x-1 transition-all" />
+                    </div>
+                  ))}
                 </div>
               </div>
+            ) : (
+              <div className="animate-in fade-in slide-in-from-right-8 duration-500">
+                <button onClick={() => setStep(1)} className="flex items-center gap-2 text-slate-500 hover:text-white text-xs font-bold mb-8 transition-colors">
+                  <ChevronLeft size={14} /> ย้อนกลับ
+                </button>
 
-              {/* CTA */}
-              <div className="flex items-center justify-between p-4 bg-emerald-50 dark:bg-emerald-900/20 rounded-xl border border-emerald-200/50 dark:border-emerald-800/50 group-hover:bg-emerald-100 dark:group-hover:bg-emerald-900/30 transition-colors">
-                <span className="text-emerald-700 dark:text-emerald-400 font-semibold">
-                  เริ่มวางแผนตามเป้าหมาย
-                </span>
-                <svg 
-                  className="w-6 h-6 text-emerald-600 dark:text-emerald-400 group-hover:translate-x-2 transition-transform" 
-                  fill="none" 
-                  stroke="currentColor" 
-                  viewBox="0 0 24 24"
+                <div className="mb-8 text-center">
+                  <h2 className="text-2xl font-black text-white mb-2">ระบุรายละเอียด</h2>
+                  <p className="text-slate-400 font-medium">ข้อมูลเพื่อสร้างกลยุทธ์เฉพาะคุณ</p>
+                </div>
+
+                <div className="space-y-6">
+                  <TextField
+                    label="ชื่อแผนการเงิน"
+                    value={newPlan.name}
+                    onChange={(e) => setNewPlan({ ...newPlan, name: e.target.value })}
+                    fullWidth
+                    autoFocus
+                  />
+
+                  <div className="grid grid-cols-2 gap-4">
+                    <TextField
+                      label="อายุปัจจุบัน"
+                      type="number"
+                      value={newPlan.currentAge}
+                      onChange={(e) => setNewPlan({ ...newPlan, currentAge: Number(e.target.value) })}
+                      InputProps={{ endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">ปี</span></InputAdornment> }}
+                    />
+                    <TextField
+                      label={newPlan.planType === 'ib' ? "อายุเกษียณ" : "เป้าหมายที่อายุ"}
+                      type="number"
+                      value={newPlan.targetAge}
+                      onChange={(e) => setNewPlan({ ...newPlan, targetAge: Number(e.target.value) })}
+                      InputProps={{ endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">ปี</span></InputAdornment> }}
+                    />
+                  </div>
+
+                  <div className="pt-4 border-t border-white/5">
+                    <TextField
+                      label={newPlan.planType === 'ib' ? "รายจ่ายรายเดือนที่ต้องการ" : "เงินก้อนเป้าหมาย"}
+                      type="number"
+                      value={newPlan.money}
+                      onChange={(e) => setNewPlan({ ...newPlan, money: e.target.value })}
+                      fullWidth
+                      InputProps={{
+                        startAdornment: <InputAdornment position="start"><DollarSign size={16} className="text-indigo-400" /></InputAdornment>,
+                        endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">บาท</span></InputAdornment>
+                      }}
+                    />
+                  </div>
+
+                  <TextField
+                    label="เงินเก็บปัจจุบัน"
+                    type="number"
+                    value={newPlan.currentSavings}
+                    onChange={(e) => setNewPlan({ ...newPlan, currentSavings: e.target.value })}
+                    fullWidth
+                    InputProps={{
+                      startAdornment: <InputAdornment position="start"><PiggyBank size={16} className="text-emerald-400" /></InputAdornment>,
+                      endAdornment: <InputAdornment position="end"><span className="text-[10px] font-bold text-slate-600">บาท</span></InputAdornment>
+                    }}
+                  />
+                </div>
+
+                <button
+                  disabled={!newPlan.name || !newPlan.money || isCreating}
+                  onClick={handleFinalizeCreation}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 text-white py-4 rounded-[20px] font-bold mt-10 transition-all shadow-xl shadow-indigo-600/20 flex items-center justify-center gap-2 disabled:opacity-50"
                 >
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M13 7l5 5m0 0l-5 5m5-5H6" />
-                </svg>
+                  {isCreating ? <Loader2 className="animate-spin" size={20} /> : "ยืนยันและสร้างแผน"}
+                </button>
               </div>
-            </div>
+            )}
           </div>
-        </div>
-
-        {/* Comparison Table */}
-        <div className="mt-16 max-w-5xl mx-auto">
-          <h2 className="text-2xl font-bold text-gray-800 dark:text-gray-100 mb-6 text-center">
-            เปรียบเทียบรูปแบบการวางแผน
-          </h2>
-          <div className="bg-white/80 dark:bg-gray-800/80 backdrop-blur-sm rounded-xl shadow-lg overflow-hidden border border-gray-200/50 dark:border-gray-700/50">
-            <table className="w-full">
-              <thead className="bg-gray-50 dark:bg-gray-700/50">
-                <tr>
-                  <th className="px-6 py-4 text-left text-sm font-semibold text-gray-700 dark:text-gray-300">
-                    คุณสมบัติ
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-blue-700 dark:text-blue-400">
-                    Income-Based
-                  </th>
-                  <th className="px-6 py-4 text-center text-sm font-semibold text-emerald-700 dark:text-emerald-400">
-                    Goal-Based
-                  </th>
-                </tr>
-              </thead>
-              <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    เน้นการจัดสรรรายได้
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-blue-600 dark:text-blue-400 text-xl">✓</span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-gray-400">-</span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    มีเป้าหมายที่ชัดเจน
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-gray-400">-</span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-emerald-600 dark:text-emerald-400 text-xl">✓</span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    บันทึกและจัดการหลายแผน
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-blue-600 dark:text-blue-400 text-xl">✓</span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-emerald-600 dark:text-emerald-400 text-xl">✓</span>
-                  </td>
-                </tr>
-                <tr className="hover:bg-gray-50 dark:hover:bg-gray-700/30 transition-colors">
-                  <td className="px-6 py-4 text-sm text-gray-700 dark:text-gray-300">
-                    กราฟและการวิเคราะห์
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-blue-600 dark:text-blue-400 text-xl">✓</span>
-                  </td>
-                  <td className="px-6 py-4 text-center">
-                    <span className="text-emerald-600 dark:text-emerald-400 text-xl">✓</span>
-                  </td>
-                </tr>
-              </tbody>
-            </table>
-          </div>
-        </div>
-
-        {/* Help Section */}
-        <div className="mt-16 max-w-4xl mx-auto">
-          <div className="bg-gradient-to-r from-purple-600 to-pink-600 rounded-2xl shadow-xl p-8 text-white text-center">
-            <div className="text-5xl mb-4">💡</div>
-            <h3 className="text-2xl font-bold mb-3">
-              ไม่แน่ใจว่าควรเลือกแบบไหน?
-            </h3>
-            <p className="text-lg text-purple-100 mb-6 max-w-2xl mx-auto">
-              ถ้าคุณมีรายได้ประจำและต้องการบริหารเงินให้เหมาะสม เลือก <strong>Income-Based</strong><br />
-              ถ้าคุณมีเป้าหมายที่ชัดเจน เช่น เกษียณ ซื้อบ้าน เลือก <strong>Goal-Based</strong>
-            </p>
-            <div className="flex gap-4 justify-center flex-wrap">
-              <button
-                onClick={() => router.push("/plan/income-based")}
-                className="px-6 py-3 bg-white text-purple-600 font-semibold rounded-lg hover:bg-purple-50 transition-colors shadow-lg"
-              >
-                ลอง Income-Based
-              </button>
-              <button
-                onClick={() => router.push("/plan/goal-based")}
-                className="px-6 py-3 bg-purple-800 text-white font-semibold rounded-lg hover:bg-purple-900 transition-colors shadow-lg border-2 border-white/30"
-              >
-                ลอง Goal-Based
-              </button>
-            </div>
-          </div>
-        </div>
+        </Dialog>
       </div>
-    </div>
+    </ThemeProvider>
   );
 }
