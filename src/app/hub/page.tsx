@@ -32,6 +32,7 @@ import FeaturedArticleComponent, {
   AINewsArticle,
 } from "@/components/Article/featuredArticle";
 import OnboardingTutorial from "@/components/Onboarding/OnboardingTutorial";
+import { parseCookies } from "nookies";
 
 const tools: ITool[] = [
   {
@@ -160,7 +161,7 @@ const HubPage = () => {
   const router = useRouter();
   const [news, setNews] = useState<INewsArticle[]>([]);
   const [featuredArticle, setFeaturedArticle] = useState<AINewsArticle | null>(
-    null
+    null,
   );
   const [featuredLoading, setFeaturedLoading] = useState(true);
   const [featuredError, setFeaturedError] = useState<string | null>(null);
@@ -200,7 +201,7 @@ const HubPage = () => {
   const fetchAccountSectors = async (userId: string) => {
     try {
       const response = await axios.get(
-        `http://localhost:3001/sector/${userId}`
+        `http://localhost:3001/sector/${userId}`,
       );
       return response.data;
     } catch (error) {
@@ -223,7 +224,8 @@ const HubPage = () => {
     });
 
     // Show onboarding tutorial only once per session (after login)
-    const hasSeenOnboardingThisSession = sessionStorage.getItem('hasSeenOnboarding');
+    const hasSeenOnboardingThisSession =
+      sessionStorage.getItem("hasSeenOnboarding");
     if (!hasSeenOnboardingThisSession) {
       setShowOnboarding(true);
     }
@@ -270,7 +272,7 @@ const HubPage = () => {
       try {
         const results: { [key: string]: IStock[] } = {};
         const filteredCategories = stockCategories.filter((cat) =>
-          userSectors.some((s) => cat.title.includes(s))
+          userSectors.some((s) => cat.title.includes(s)),
         );
 
         filteredCategories.forEach((category) => {
@@ -284,7 +286,7 @@ const HubPage = () => {
         const stockPromises = allTickers.map(async (ticker) => {
           try {
             const response = await fetch(
-              `http://localhost:3001/stock/data?ticker=${ticker.toUpperCase()}`
+              `http://localhost:3001/stock/data?ticker=${ticker.toUpperCase()}`,
             );
             const result = await response.json();
             if (result.success && result.data) return result.data;
@@ -295,7 +297,7 @@ const HubPage = () => {
         });
 
         const stockData = (await Promise.all(stockPromises)).filter(
-          (s) => s !== null
+          (s) => s !== null,
         ) as IStock[];
 
         filteredCategories.forEach((category) => {
@@ -330,7 +332,7 @@ const HubPage = () => {
                 Authorization: `Bearer ${token}`,
                 "Content-Type": "application/json",
               },
-            }
+            },
           );
 
           if (response.ok) {
@@ -452,7 +454,7 @@ const HubPage = () => {
 
   const calculateYearsToRetirement = (
     currentAge: number,
-    retirementAge: number
+    retirementAge: number,
   ) => {
     return retirementAge - currentAge;
   };
@@ -463,9 +465,39 @@ const HubPage = () => {
   };
 
   const handleOnboardingComplete = () => {
-    sessionStorage.setItem('hasSeenOnboarding', 'true');
+    sessionStorage.setItem("hasSeenOnboarding", "true");
     setShowOnboarding(false);
   };
+
+  const [isAuthenticated, setIsAuthenticated] = useState(false);
+
+  useEffect(() => {
+    const checkAuth = () => {
+      const cookies = parseCookies();
+      const accessToken = cookies.accessToken;
+
+      if (!accessToken) {
+        router.push("/");
+      } else {
+        setIsAuthenticated(true);
+      }
+    };
+
+    checkAuth();
+  }, [router]);
+
+  if (!isAuthenticated) {
+    return (
+      <div className="min-h-screen bg-gradient-to-br from-gray-50 via-slate-50 to-gray-100 dark:from-gray-900 dark:via-slate-900 dark:to-gray-800 flex items-center justify-center">
+        <div className="text-center">
+          <div className="animate-spin rounded-full h-16 w-16 border-b-2 border-slate-700 mx-auto"></div>
+          <p className="mt-4 text-gray-600 dark:text-gray-400">
+            กำลังตรวจสอบสิทธิ์...
+          </p>
+        </div>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen pt-8 bg-gradient-to-br from-slate-900 via-slate-800 to-slate-900">
@@ -490,7 +522,7 @@ const HubPage = () => {
                 className="group relative px-4 py-2 rounded-lg bg-gradient-to-r from-purple-500/20 to-pink-500/20 hover:from-purple-500/30 hover:to-pink-500/30 text-purple-300 text-sm font-medium transition-all duration-300 flex items-center gap-2 border border-purple-500/30 hover:border-purple-400/50 hover:scale-105 hover:shadow-lg hover:shadow-purple-500/20"
                 title="ดูคู่มือการใช้งาน"
               >
-                <span className="text-lg group-hover:animate-bounce">💡</span> 
+                <span className="text-lg group-hover:animate-bounce">💡</span>
                 <span>คู่มือ</span>
                 <span className="absolute inset-0 rounded-lg opacity-0 group-hover:opacity-100 transition-opacity shimmer pointer-events-none"></span>
               </button>
@@ -513,7 +545,8 @@ const HubPage = () => {
                   onClick={() => router.push("/plan")}
                   className="text-orange-400 hover:text-orange-300 text-sm flex items-center gap-1"
                 >
-                  {retirementPlans.length === 0 ? "สร้างแผน" : "สร้างแผนใหม่"} <ArrowRight className="w-4 h-4" />
+                  {retirementPlans.length === 0 ? "สร้างแผน" : "สร้างแผนใหม่"}{" "}
+                  <ArrowRight className="w-4 h-4" />
                 </button>
               </div>
               <div className="h-[400px] overflow-y-auto pr-2 custom-scrollbar">
@@ -541,32 +574,57 @@ const HubPage = () => {
                           <div className="p-1.5 rounded-lg bg-orange-500/20">
                             <Target className="w-4 h-4 text-orange-400" />
                           </div>
-                          <h3 className="text-base font-bold text-white">{plan.name}</h3>
+                          <h3 className="text-base font-bold text-white">
+                            {plan.name}
+                          </h3>
                         </div>
 
                         <div className="grid grid-cols-2 gap-3">
                           <div>
-                            <p className="text-slate-400 text-xs mb-1">อายุปัจจุบัน</p>
-                            <p className="text-white text-sm font-semibold">{plan.currentAge} ปี</p>
+                            <p className="text-slate-400 text-xs mb-1">
+                              อายุปัจจุบัน
+                            </p>
+                            <p className="text-white text-sm font-semibold">
+                              {plan.currentAge} ปี
+                            </p>
                           </div>
                           <div>
-                            <p className="text-slate-400 text-xs mb-1">อายุเกษียณ</p>
-                            <p className="text-white text-sm font-semibold">{plan.retirementAge} ปี</p>
+                            <p className="text-slate-400 text-xs mb-1">
+                              อายุเกษียณ
+                            </p>
+                            <p className="text-white text-sm font-semibold">
+                              {plan.retirementAge} ปี
+                            </p>
                           </div>
                           <div>
-                            <p className="text-slate-400 text-xs mb-1">เงินออมปัจจุบัน</p>
-                            <p className="text-green-400 text-sm font-semibold">฿{formatCurrency(plan.currentSavings)}</p>
+                            <p className="text-slate-400 text-xs mb-1">
+                              เงินออมปัจจุบัน
+                            </p>
+                            <p className="text-green-400 text-sm font-semibold">
+                              ฿{formatCurrency(plan.currentSavings)}
+                            </p>
                           </div>
                           <div>
-                            <p className="text-slate-400 text-xs mb-1">ค่าใช้จ่าย/เดือน</p>
-                            <p className="text-blue-400 text-sm font-semibold">฿{formatCurrency(plan.money)}</p>
+                            <p className="text-slate-400 text-xs mb-1">
+                              ค่าใช้จ่าย/เดือน
+                            </p>
+                            <p className="text-blue-400 text-sm font-semibold">
+                              ฿{formatCurrency(plan.money)}
+                            </p>
                           </div>
                         </div>
 
                         <div className="flex items-center justify-between pt-3 mt-3 border-t border-slate-700/50">
                           <div className="flex items-center gap-1 text-slate-300 text-xs">
                             <PiggyBank className="w-3 h-3" />
-                            <span>เหลือ {calculateYearsToRetirement(plan.currentAge, plan.retirementAge)} ปี</span>
+                            <span>
+                              เหลือ{" "}
+                              {calculateYearsToRetirement(
+                                plan.currentAge,
+                                plan.retirementAge,
+                              )}{" "}
+                              ปี
+                            </span>
                           </div>
                         </div>
                       </div>
@@ -575,8 +633,12 @@ const HubPage = () => {
                 ) : (
                   <div className="flex flex-col items-center justify-center h-full text-center">
                     <div className="text-4xl mb-3">🎯</div>
-                    <h3 className="text-lg font-bold text-white mb-2">ยังไม่มีแผนการเกษียณ</h3>
-                    <p className="text-slate-400 text-sm mb-4">เริ่มวางแผนการเกษียณของคุณ</p>
+                    <h3 className="text-lg font-bold text-white mb-2">
+                      ยังไม่มีแผนการเกษียณ
+                    </h3>
+                    <p className="text-slate-400 text-sm mb-4">
+                      เริ่มวางแผนการเกษียณของคุณ
+                    </p>
                     <button
                       className="inline-flex items-center gap-1 px-4 py-2 bg-gradient-to-r from-orange-500 to-red-500 text-white text-sm font-medium rounded-full hover:from-orange-600 hover:to-red-600 transition-all"
                       onClick={() => router.push("/plan")}
@@ -610,7 +672,9 @@ const HubPage = () => {
                       className="cursor-pointer rounded-xl bg-slate-800/50 border border-slate-700/50 overflow-hidden hover:border-slate-600/50 transition-all duration-300 hover:scale-[1.02]"
                       onClick={() => router.push(tool.path)}
                     >
-                      <div className={`h-1 bg-gradient-to-r ${tool.color}`}></div>
+                      <div
+                        className={`h-1 bg-gradient-to-r ${tool.color}`}
+                      ></div>
                       <div className="p-4">
                         <div className="flex items-center gap-3">
                           <div className="text-2xl">{tool.icon}</div>
@@ -656,7 +720,7 @@ const HubPage = () => {
                   <div className="space-y-4">
                     {userSectors.map((sectorName, idx) => {
                       const category = stockCategories.find((c) =>
-                        c.title.includes(sectorName)
+                        c.title.includes(sectorName),
                       );
                       if (!category) return null;
                       return (
@@ -665,8 +729,12 @@ const HubPage = () => {
                           className="bg-slate-800/30 rounded-xl p-4"
                         >
                           <div className="flex items-center gap-2 mb-3">
-                            <div className={`p-2 rounded-lg bg-gradient-to-r ${category.color} bg-opacity-20`}>
-                              <div className="text-white scale-75">{category.icon}</div>
+                            <div
+                              className={`p-2 rounded-lg bg-gradient-to-r ${category.color} bg-opacity-20`}
+                            >
+                              <div className="text-white scale-75">
+                                {category.icon}
+                              </div>
                             </div>
                             <h3 className="text-sm font-bold text-white">
                               {category.title}
@@ -674,28 +742,44 @@ const HubPage = () => {
                           </div>
 
                           <div className="grid grid-cols-2 gap-2">
-                            {stocksByCategory[category.title]?.slice(0, 4).map((stock) => (
-                              <div
-                                key={stock.ticker}
-                                className="relative p-3 rounded-lg transition-all duration-300 hover:scale-105 border cursor-pointer"
-                                onClick={() => router.push(`/pricing?ticker=${stock.ticker}`)}
-                                style={{...getHeatmapColor(stock.changePercent)}}
-                              >
-                                <div className="text-[10px] font-bold text-white leading-tight">
-                                  {stock.ticker}
-                                </div>
-                                <div className="text-xs font-semibold text-slate-200 mt-1">
-                                  ${stock.price > 0 ? stock.price.toFixed(2) : "N/A"}
-                                </div>
+                            {stocksByCategory[category.title]
+                              ?.slice(0, 4)
+                              .map((stock) => (
                                 <div
-                                  className="text-[10px] font-bold mt-0.5"
-                                  style={{color: stock.changePercent > 0 ? "green" : "red"}}
+                                  key={stock.ticker}
+                                  className="relative p-3 rounded-lg transition-all duration-300 hover:scale-105 border cursor-pointer"
+                                  onClick={() =>
+                                    router.push(
+                                      `/pricing?ticker=${stock.ticker}`,
+                                    )
+                                  }
+                                  style={{
+                                    ...getHeatmapColor(stock.changePercent),
+                                  }}
                                 >
-                                  {stock.changePercent >= 0 ? "+" : ""}
-                                  {stock.changePercent.toFixed(2)}%
+                                  <div className="text-[10px] font-bold text-white leading-tight">
+                                    {stock.ticker}
+                                  </div>
+                                  <div className="text-xs font-semibold text-slate-200 mt-1">
+                                    $
+                                    {stock.price > 0
+                                      ? stock.price.toFixed(2)
+                                      : "N/A"}
+                                  </div>
+                                  <div
+                                    className="text-[10px] font-bold mt-0.5"
+                                    style={{
+                                      color:
+                                        stock.changePercent > 0
+                                          ? "green"
+                                          : "red",
+                                    }}
+                                  >
+                                    {stock.changePercent >= 0 ? "+" : ""}
+                                    {stock.changePercent.toFixed(2)}%
+                                  </div>
                                 </div>
-                              </div>
-                            ))}
+                              ))}
                           </div>
                         </div>
                       );
@@ -736,9 +820,10 @@ const HubPage = () => {
                         <div
                           key={article.id || `news-${index}`}
                           className={`cursor-pointer rounded-xl transition-all duration-300 hover:scale-[1.02] border backdrop-blur-md p-4
-                            ${isAI
-                              ? "bg-slate-900/40 border-blue-500/50"
-                              : "bg-slate-800/50 border-slate-700/50"
+                            ${
+                              isAI
+                                ? "bg-slate-900/40 border-blue-500/50"
+                                : "bg-slate-800/50 border-slate-700/50"
                             }`}
                           onClick={() => {
                             article.url === "/news"
@@ -750,12 +835,18 @@ const HubPage = () => {
                             {isAI ? (
                               <div className="flex items-center gap-1 px-2 py-0.5 rounded-full bg-blue-500/10 text-blue-400 border border-blue-500/20">
                                 <Zap className="w-3 h-3 fill-blue-400" />
-                                <span className="text-[9px] font-bold uppercase">AI</span>
+                                <span className="text-[9px] font-bold uppercase">
+                                  AI
+                                </span>
                               </div>
                             ) : (
                               <div className="flex items-center gap-1">
                                 <Calendar className="w-3 h-3" />
-                                <span>{article.publishedAt ? formatDate(article.publishedAt) : "N/A"}</span>
+                                <span>
+                                  {article.publishedAt
+                                    ? formatDate(article.publishedAt)
+                                    : "N/A"}
+                                </span>
                               </div>
                             )}
                             <div className="flex items-center gap-1">
@@ -764,12 +855,16 @@ const HubPage = () => {
                             </div>
                           </div>
 
-                          <h3 className={`text-sm font-bold mb-2 line-clamp-2 ${isAI ? "text-blue-100" : "text-slate-100"}`}>
+                          <h3
+                            className={`text-sm font-bold mb-2 line-clamp-2 ${isAI ? "text-blue-100" : "text-slate-100"}`}
+                          >
                             {article.title}
                           </h3>
 
                           <p className="text-slate-400 text-xs line-clamp-2 leading-relaxed">
-                            {article.content || article.description || "ไม่มีเนื้อหาข่าว"}
+                            {article.content ||
+                              article.description ||
+                              "ไม่มีเนื้อหาข่าว"}
                           </p>
                         </div>
                       );
@@ -779,8 +874,6 @@ const HubPage = () => {
               </div>
             </section>
           </div>
-
-          
         </div>
       </div>
 
