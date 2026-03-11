@@ -71,6 +71,7 @@ const NavBar = () => {
 
   const handleLogout = () => {
     destroyCookie(null, "accessToken");
+    sessionStorage.removeItem("hasSeenOnboarding");
     window.location.href = "/";
   };
 

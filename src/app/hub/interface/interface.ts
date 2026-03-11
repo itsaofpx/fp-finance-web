@@ -27,6 +27,7 @@ interface IStock {
 }
 
 interface ITool {
+  order: number;
   title: string;
   description: string;
   icon: string;

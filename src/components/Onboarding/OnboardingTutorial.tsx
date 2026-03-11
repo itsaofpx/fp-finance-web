@@ -159,8 +159,12 @@ const OnboardingTutorial: React.FC<OnboardingTutorialProps> = ({
   return (
     <>
       <Confetti isActive={showConfetti} />
-      <div className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300">
+      <div 
+        onClick={handleSkip}
+        className="fixed inset-0 z-[9999] flex items-center justify-center p-4 bg-black/60 backdrop-blur-md animate-in fade-in duration-300"
+      >
       <div
+        onClick={(e) => e.stopPropagation()}
         className={`relative w-full max-w-2xl bg-white dark:bg-gray-900 rounded-2xl shadow-2xl transform transition-all duration-500 ${
           isVisible ? "scale-100 opacity-100 translate-y-0" : "scale-95 opacity-0 translate-y-4"
         }`}

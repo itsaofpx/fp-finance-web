@@ -18,10 +18,12 @@ export default function RootLayout({
   const isGetStartedPath = pathname.startsWith("/get-started");
   const isPlanPath = pathname.startsWith("/plan");
 
+  const bodyClass = "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen";
+
   if (isPricePath || isGetStartedPath) {
     return (
       <html lang="en">
-        <body>{children}</body>
+        <body className={bodyClass}>{children}</body>
       </html>
     );
   }
@@ -29,7 +31,7 @@ export default function RootLayout({
   if (isPlanPath) {
     return (
       <html lang="en">
-        <body>
+        <body className={bodyClass}>
           <NavBar />
           {children}
         </body>
@@ -41,7 +43,7 @@ export default function RootLayout({
     const toolName = pathname.replace("/tool/", "");
     return (
       <html lang="en">
-        <body>
+        <body className={bodyClass}>
           <ToolLayout toolName={toolName}>{children}</ToolLayout>
         </body>
       </html>
@@ -50,7 +52,7 @@ export default function RootLayout({
 
   return (
     <html lang="en">
-      <body>
+      <body className={bodyClass}>
         <NavBar />
         {children}
         <Footer />
