@@ -649,7 +649,11 @@ const HubPage = () => {
               ) : retirementPlans.length > 0 ? (
                 <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                   {retirementPlans.map((plan) => (
-                    <div key={plan.id} className="p-6 rounded-2xl bg-[#111827]/80 border border-slate-800 hover:border-orange-500/40 transition-all cursor-pointer group shadow-sm">
+                    <div
+                      key={plan.id}
+                      onClick={() => router.push(`/plan/${plan.id}`)}
+                      className="p-6 rounded-2xl bg-[#111827]/80 border border-slate-800 hover:border-orange-500/40 transition-all cursor-pointer group shadow-sm"
+                    >
                       <div className="flex justify-between items-center mb-6">
                         <span className="text-lg font-bold text-white group-hover:text-orange-500 transition-colors">{plan.name}</span>
                         <div className="p-2 bg-slate-800/50 rounded-lg"><PiggyBank className="w-5 h-5 text-slate-400" /></div>

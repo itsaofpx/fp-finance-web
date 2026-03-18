@@ -32,6 +32,8 @@ import {
   AlertCircle,
   Info,
   ArrowRight,
+  Bot,
+  Sparkles,
 } from "lucide-react";
 import {
   TextField,
@@ -80,6 +82,16 @@ const darkTheme = createTheme({
   },
 });
 
+type PlanAnalysisData = {
+  planName: string;
+  executiveSummary: string;
+  strategyAnalysis: {
+    investmentMix: string;
+    riskManagement: string;
+  };
+  actionPlan: string[];
+};
+
 export default function PlanWorkspace() {
   const { id } = useParams();
   const router = useRouter();
@@ -90,6 +102,10 @@ export default function PlanWorkspace() {
   const [isRenameOpen, setIsRenameOpen] = useState(false);
   const [tempName, setTempName] = useState("");
   const [statusModal, setStatusModal] = useState({ open: false, title: "", message: "", type: "success" });
+  const [isAiSidebarOpen, setIsAiSidebarOpen] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiError, setAiError] = useState("");
+  const [planAnalysis, setPlanAnalysis] = useState<PlanAnalysisData | null>(null);
 
   useEffect(() => {
     const fetchPlan = async () => {
@@ -205,6 +221,52 @@ export default function PlanWorkspace() {
     return data;
   }, [results, plan]);
 
+  const fetchPlanAnalysis = async () => {
+    if (!plan || !results || (plan.planType !== "ib" && plan.planType !== "gb")) return;
+
+    setAiLoading(true);
+    setAiError("");
+
+    try {
+      const basePayload = {
+        planName: plan.name,
+        age: Number(plan.currentAge),
+        retirementAge: Number(plan.retirementAge),
+        saving: Number(plan.currentSavings),
+        returns: Number(plan.expectedReturn),
+        inflation: Number(plan.inflationRate),
+        totalTarget: Number(results.target || 0),
+        monthlyInvestment: Number(results.monthly || 0),
+      };
+
+      const endpoint = plan.planType === "ib"
+        ? "http://localhost:3001/gemini/prompt/incomePlan"
+        : "http://localhost:3001/gemini/prompt/goalStrategyPlan";
+
+      const payload = plan.planType === "ib"
+        ? {
+            ...basePayload,
+            income: Number(plan.monthlyExpenses ?? plan.money ?? 0),
+          }
+        : basePayload;
+
+      const response = await axios.post(endpoint, payload, {
+        headers: { "Content-Type": "application/json" },
+      });
+
+      if (response.data?.success && response.data?.data) {
+        setPlanAnalysis(response.data.data as PlanAnalysisData);
+        return;
+      }
+
+      setAiError("ไม่พบข้อมูลวิเคราะห์จาก AI");
+    } catch {
+      setAiError("ไม่สามารถโหลดการวิเคราะห์แผนได้");
+    } finally {
+      setAiLoading(false);
+    }
+  };
+
   if (loading) return (
     <div className="min-h-screen bg-gray-900 flex items-center justify-center text-white">
       <LinearProgress sx={{ width: 200 }} color="primary" />
@@ -215,10 +277,10 @@ export default function PlanWorkspace() {
 
   return (
     <ThemeProvider theme={darkTheme}>
-      <div className="min-h-screen bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 flex flex-col lg:flex-row pt-16">
+      <div className="fixed inset-0 bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 text-gray-200 flex flex-col lg:flex-row overflow-hidden">
 
         {/* SIDEBAR */}
-        <aside className="w-full lg:w-[420px] bg-[#0f1218]/80 backdrop-blur-md border-r border-white/5 p-6 overflow-y-auto lg:h-[calc(100vh-64px)] lg:sticky lg:top-16 flex flex-col z-10">
+        <aside className="w-full lg:w-[420px] bg-[#0f1218]/80 backdrop-blur-md border-r border-white/5 p-6 overflow-y-auto flex flex-col z-10">
           <div className="flex justify-between items-center mb-6">
             <button onClick={() => router.push("/plan")} className="flex items-center gap-2 text-gray-400 hover:text-white transition-colors">
               <ChevronLeft size={18} /> <span>กลับ</span>
@@ -276,8 +338,8 @@ export default function PlanWorkspace() {
         </aside>
 
         {/* MAIN CONTENT */}
-        <main className="flex-1 p-6 lg:p-10 lg:h-[calc(100vh-64px)] overflow-y-auto">
-          <div className="max-w-5xl mx-auto space-y-10 pb-20">
+        <main className="flex-1 p-6 lg:p-10 overflow-y-auto">
+          <div className="max-w-5xl mx-auto space-y-10 pb-20 pt-16">
 
             {/* SUMMARY CARDS */}
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
@@ -406,6 +468,98 @@ export default function PlanWorkspace() {
             </div>
           </div>
         </main>
+
+        {/* AI ANALYSIS SIDEBAR (Income + Goal plan) */}
+        {(plan.planType === "ib" || plan.planType === "gb") && (
+          <>
+            <button
+              onClick={async () => {
+                setIsAiSidebarOpen((prev) => !prev);
+                if (!planAnalysis && !aiLoading) {
+                  await fetchPlanAnalysis();
+                }
+              }}
+              className="fixed right-6 top-24 z-30 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg"
+            >
+              <Bot size={18} /> AI วิเคราะห์แผน
+            </button>
+
+            <aside
+              className={`fixed right-0 top-0 h-full w-full sm:w-[420px] bg-[#0b1220]/95 backdrop-blur-md border-l border-white/10 z-20 p-6 pt-20 overflow-y-auto transition-transform duration-300 ${isAiSidebarOpen ? "translate-x-0" : "translate-x-full"}`}
+            >
+              <div className="flex items-start justify-between gap-3 mb-6">
+                <div>
+                  <p className="text-xs uppercase tracking-widest text-indigo-300 font-bold mb-2">
+                    {plan.planType === "ib" ? "AI Income Plan" : "AI Goal Plan"}
+                  </p>
+                  <h3 className="text-xl font-extrabold text-white flex items-center gap-2">
+                    <Sparkles size={18} className="text-indigo-300" />
+                    {plan.planType === "ib" ? "วิเคราะห์แผนรายได้" : "วิเคราะห์แผนเป้าหมาย"}
+                  </h3>
+                </div>
+                <button
+                  onClick={() => setIsAiSidebarOpen(false)}
+                  className="text-gray-400 hover:text-white text-sm"
+                >
+                  ปิด
+                </button>
+              </div>
+
+              <div className="mb-5">
+                <button
+                  onClick={fetchPlanAnalysis}
+                  disabled={aiLoading}
+                  className="w-full bg-indigo-600 hover:bg-indigo-500 disabled:opacity-60 text-white rounded-xl px-4 py-3 font-bold"
+                >
+                  {aiLoading ? "กำลังวิเคราะห์..." : "วิเคราะห์ใหม่"}
+                </button>
+              </div>
+
+              {aiError && (
+                <div className="mb-4 p-4 rounded-xl border border-rose-500/30 bg-rose-500/10 text-rose-200 text-sm">
+                  {aiError}
+                </div>
+              )}
+
+              {!aiLoading && planAnalysis && (
+                <div className="space-y-4">
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <p className="text-xs text-indigo-300 font-bold mb-2">Executive Summary</p>
+                    <p className="text-sm text-gray-200 leading-relaxed">{planAnalysis.executiveSummary}</p>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10 space-y-3">
+                    <p className="text-xs text-indigo-300 font-bold">Strategy Analysis</p>
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase">Investment Mix</p>
+                      <p className="text-sm text-gray-200 leading-relaxed">{planAnalysis.strategyAnalysis?.investmentMix}</p>
+                    </div>
+                    <div>
+                      <p className="text-[11px] text-gray-400 uppercase">Risk Management</p>
+                      <p className="text-sm text-gray-200 leading-relaxed">{planAnalysis.strategyAnalysis?.riskManagement}</p>
+                    </div>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-white/5 border border-white/10">
+                    <p className="text-xs text-indigo-300 font-bold mb-2">Action Plan</p>
+                    <ul className="space-y-2">
+                      {(planAnalysis.actionPlan || []).map((item, index) => (
+                        <li key={`${item}-${index}`} className="text-sm text-gray-200 flex items-start gap-2">
+                          <ArrowRight size={14} className="mt-1 text-indigo-300 shrink-0" />
+                          <span>{item}</span>
+                        </li>
+                      ))}
+                    </ul>
+                  </div>
+
+                  <div className="p-4 rounded-2xl bg-amber-500/10 border border-amber-400/20 text-xs text-amber-100 leading-relaxed">
+                    ข้อสงวนสิทธิ์: ข้อมูลนี้สร้างโดย AI เพื่อประกอบการตัดสินใจเบื้องต้น ไม่ใช่คำแนะนำการลงทุนแบบเฉพาะบุคคล
+                  </div>
+                </div>
+              )}
+            </aside>
+          </>
+        )}
       </div>
 
       {/* RENAME DIALOG */}
