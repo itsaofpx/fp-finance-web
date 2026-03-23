@@ -479,7 +479,7 @@ export default function PlanWorkspace() {
                   await fetchPlanAnalysis();
                 }
               }}
-              className="fixed right-6 top-24 z-30 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg"
+              className={`fixed right-6 top-24 z-10 inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white font-semibold shadow-lg transition-opacity duration-200 ${isAiSidebarOpen ? "opacity-0 pointer-events-none" : "opacity-100"}`}
             >
               <Bot size={18} /> AI วิเคราะห์แผน
             </button>
