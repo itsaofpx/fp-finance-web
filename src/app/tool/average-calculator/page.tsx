@@ -1,6 +1,20 @@
 "use client";
-import { Button, TextField, Alert, CircularProgress, Dialog, DialogTitle, DialogContent, DialogActions, IconButton } from "@mui/material";
-import { useState } from "react";
+import {
+  Button,
+  TextField,
+  Alert,
+  CircularProgress,
+  Dialog,
+  DialogTitle,
+  DialogContent,
+  DialogActions,
+  IconButton,
+  Autocomplete,
+  Box,
+  Typography,
+  Chip,
+} from "@mui/material";
+import { useState, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import DisclaimerFooter from "@/components/Footer/disclaimerFooter";
 import CloseIcon from "@mui/icons-material/Close";
@@ -16,8 +30,50 @@ export interface IAverageCostInvestResponse {
   profitLossPercentage: number;
 }
 
+interface TickerData {
+  ticker: string;
+  name: string;
+  price: number;
+  change: number;
+  changePercent: number;
+  sector?: string;
+}
+function getTickersFromLocalStorage(): TickerData[] {
+  try {
+    const raw = localStorage.getItem("sp500_stocks_cache");
+    if (!raw) return [];
+    const parsed = JSON.parse(raw);
+    const source: Record<string, unknown> =
+      parsed && typeof parsed === "object" && "data" in parsed
+        ? (parsed as { data: Record<string, unknown> }).data
+        : parsed;
+
+    return Object.values(source)
+      .filter(
+        (v): v is Record<string, unknown> =>
+          v !== null && typeof v === "object",
+      )
+      .map((item) => ({
+        ticker: String(item.ticker ?? ""),
+        name: String(item.name ?? ""),
+        price: Number(item.price ?? 0),
+        change: Number(item.change ?? 0),
+        changePercent: Number(item.changePercent ?? 0),
+        sector: item.sector ? String(item.sector) : undefined,
+      }))
+      .filter((t) => t.ticker && t.price > 0);
+  } catch {
+    return [];
+  }
+}
+
 const AverageCostCalculator = () => {
   const router = useRouter();
+
+  // Load tickers once on first render
+  const tickers = useMemo(() => getTickersFromLocalStorage(), []);
+
+  const [selectedTicker, setSelectedTicker] = useState<TickerData | null>(null);
   const [formData, setFormData] = useState({
     currentStockUnits: "",
     averageCostPerShare: "",
@@ -31,20 +87,23 @@ const AverageCostCalculator = () => {
 
   const handleInputChange =
     (field: string) => (event: React.ChangeEvent<HTMLInputElement>) => {
-      setFormData({
-        ...formData,
-        [field]: event.target.value,
-      });
+      setFormData({ ...formData, [field]: event.target.value });
       if (error) setError(null);
     };
 
-  const handleBackClick = () => {
-    router.push("/tool");
+  const handleTickerSelect = (_: unknown, value: TickerData | null) => {
+    setSelectedTicker(value);
+    if (value) {
+      setFormData((prev) => ({
+        ...prev,
+        currentMarketPrice: value.price.toFixed(2),
+      }));
+      if (error) setError(null);
+    }
   };
 
-  const handleFormulaClick = () => {
-    setOpenFormula(!openFormula);
-  };
+  const handleBackClick = () => router.push("/tool");
+  const handleFormulaClick = () => setOpenFormula(!openFormula);
 
   const validateForm = () => {
     const {
@@ -53,7 +112,6 @@ const AverageCostCalculator = () => {
       currentMarketPrice,
       additionalInvestmentAmount,
     } = formData;
-
     if (
       !currentStockUnits ||
       !averageCostPerShare ||
@@ -63,7 +121,6 @@ const AverageCostCalculator = () => {
       setError("กรุณากรอกข้อมูลให้ครบทุกช่อง");
       return false;
     }
-
     if (
       parseFloat(currentStockUnits) <= 0 ||
       parseFloat(averageCostPerShare) <= 0 ||
@@ -73,39 +130,29 @@ const AverageCostCalculator = () => {
       setError("กรุณากรอกตัวเลขที่มากกว่า 0");
       return false;
     }
-
     return true;
   };
 
   const handleCalculate = async () => {
     if (!validateForm()) return;
-
     setLoading(true);
     setError(null);
     setResult(null);
-
     try {
       const payload = {
         currentStockUnits: parseFloat(formData.currentStockUnits),
         averageCostPerShare: parseFloat(formData.averageCostPerShare),
         currentMarketPrice: parseFloat(formData.currentMarketPrice),
         additionalInvestmentAmount: parseFloat(
-          formData.additionalInvestmentAmount
+          formData.additionalInvestmentAmount,
         ),
       };
-
       const response = await fetch("http://localhost:3001/tool/average-cost", {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
+        headers: { "Content-Type": "application/json" },
         body: JSON.stringify(payload),
       });
-
-      if (!response.ok) {
-        throw new Error("Network response was not ok");
-      }
-
+      if (!response.ok) throw new Error("Network response was not ok");
       const data = await response.json();
       setResult(data);
     } catch (err) {
@@ -116,6 +163,9 @@ const AverageCostCalculator = () => {
     }
   };
 
+  // -------------------------------------------------------------------------
+  // Display helpers
+  // -------------------------------------------------------------------------
   const getValueColor = (key: string, value: number) => {
     if (key === "profitLoss" || key === "profitLossPercentage") {
       return value >= 0 ? "text-green-400" : "text-red-400";
@@ -124,7 +174,7 @@ const AverageCostCalculator = () => {
   };
 
   const getFieldLabel = (key: string) => {
-    const labels: { [key: string]: string } = {
+    const labels: Record<string, string> = {
       currentTotalCost: "มูลค่าการลงทุนเดิม",
       additionalSharesPurchased: "หุ้นที่ซื้อเพิ่ม",
       totalSharesAfterPurchase: "จำนวนหุ้นรวม",
@@ -138,7 +188,7 @@ const AverageCostCalculator = () => {
   };
 
   const getFieldDescription = (key: string) => {
-    const descriptions: { [key: string]: string } = {
+    const descriptions: Record<string, string> = {
       currentTotalCost: "เงินที่ลงทุนไปแล้ว",
       additionalSharesPurchased: "จำนวนหุ้นที่ได้จากเงินลงทุนเพิ่ม",
       totalSharesAfterPurchase: "หุ้นเดิม + หุ้นที่ซื้อเพิ่ม",
@@ -156,37 +206,46 @@ const AverageCostCalculator = () => {
     if (key.includes("Percentage")) return "%";
     return " บาท";
   };
-
   const textFieldStyle = {
     "& .MuiOutlinedInput-root": {
       backgroundColor: "#374151",
       borderRadius: "12px",
       height: "56px",
-      "& fieldset": {
-        borderColor: "#4B5563",
-      },
-      "&:hover fieldset": {
-        borderColor: "#6B7280",
-      },
-      "&.Mui-focused fieldset": {
-        borderColor: "#9CA3AF",
-        borderWidth: "2px",
-      },
+      "& fieldset": { borderColor: "#4B5563" },
+      "&:hover fieldset": { borderColor: "#6B7280" },
+      "&.Mui-focused fieldset": { borderColor: "#9CA3AF", borderWidth: "2px" },
     },
     "& .MuiInputBase-input": {
       color: "#F9FAFB",
       fontSize: "16px",
-      "&::placeholder": {
-        color: "#9CA3AF",
-      },
+      "&::placeholder": { color: "#9CA3AF" },
     },
+  };
+
+  const autocompleteInputStyle = {
+    "& .MuiOutlinedInput-root": {
+      backgroundColor: "#374151",
+      borderRadius: "12px",
+      minHeight: "56px",
+      padding: "0 14px !important",
+      "& fieldset": { borderColor: "#4B5563" },
+      "&:hover fieldset": { borderColor: "#6B7280" },
+      "&.Mui-focused fieldset": { borderColor: "#9CA3AF", borderWidth: "2px" },
+    },
+    "& .MuiInputBase-input": {
+      color: "#F9FAFB",
+      fontSize: "16px",
+      padding: "14px 0 !important",
+      "&::placeholder": { color: "#9CA3AF" },
+    },
+    "& .MuiAutocomplete-endAdornment .MuiSvgIcon-root": { color: "#9CA3AF" },
   };
 
   return (
     <div className="min-h-screen bg-gray-900 py-8 px-4">
       <div className="max-w-4xl mx-auto">
         <div className="bg-gray-800 rounded-2xl shadow-xl border border-gray-700">
-          {/* Back Arrow Header */}
+          {/* ── Header row ── */}
           <div className="p-6 pb-0 flex justify-between">
             <button
               onClick={handleBackClick}
@@ -217,7 +276,7 @@ const AverageCostCalculator = () => {
             </button>
           </div>
 
-          {/* Formula Dialog */}
+          {/* ── Formula Dialog ── */}
           <Dialog
             open={openFormula}
             onClose={() => setOpenFormula(false)}
@@ -253,92 +312,67 @@ const AverageCostCalculator = () => {
             </DialogTitle>
             <DialogContent sx={{ py: 3 }}>
               <div className="space-y-4 text-sm">
-                <div className="p-3 rounded-lg bg-blue-900/20 border border-blue-700/30">
-                  <div className="font-semibold text-blue-300 mb-1">
-                    1. มูลค่าการลงทุนเดิม
+                {[
+                  {
+                    color: "blue",
+                    label: "1. มูลค่าการลงทุนเดิม",
+                    formula: "จำนวนหุ้นปัจจุบัน × ราคาเฉลี่ยปัจจุบัน",
+                  },
+                  {
+                    color: "green",
+                    label: "2. หุ้นที่ซื้อเพิ่ม",
+                    formula: "เงินลงทุนเพิ่ม ÷ ราคาตลาดปัจจุบัน",
+                  },
+                  {
+                    color: "purple",
+                    label: "3. จำนวนหุ้นรวม",
+                    formula: "หุ้นเดิม + หุ้นที่ซื้อเพิ่ม",
+                  },
+                  {
+                    color: "yellow",
+                    label: "4. มูลค่าการลงทุนรวม",
+                    formula: "มูลค่าการลงทุนเดิม + เงินลงทุนเพิ่ม",
+                  },
+                  {
+                    color: "orange",
+                    label: "5. ราคาเฉลี่ยใหม่ต่อหุ้น",
+                    formula: "มูลค่าการลงทุนรวม ÷ จำนวนหุ้นรวม",
+                  },
+                  {
+                    color: "red",
+                    label: "6. มูลค่าพอร์ตปัจจุบัน",
+                    formula: "ราคาตลาดปัจจุบัน × จำนวนหุ้นรวม",
+                  },
+                  {
+                    color: "emerald",
+                    label: "7. กำไร/ขาดทุน",
+                    formula:
+                      "(ราคาตลาดปัจจุบัน × จำนวนหุ้นรวม) − มูลค่าการลงทุนรวม",
+                  },
+                  {
+                    color: "pink",
+                    label: "8. เปอร์เซ็นต์กำไร/ขาดทุน",
+                    formula: "(กำไร/ขาดทุน ÷ มูลค่าการลงทุนรวม) × 100",
+                  },
+                ].map(({ color, label, formula }) => (
+                  <div
+                    key={label}
+                    className={`p-3 rounded-lg bg-${color}-900/20 border border-${color}-700/30`}
+                  >
+                    <div className={`font-semibold text-${color}-300 mb-1`}>
+                      {label}
+                    </div>
+                    <div className="text-gray-300 font-mono">{formula}</div>
                   </div>
-                  <div className="text-gray-300 font-mono">
-                    จำนวนหุ้นปัจจุบัน × ราคาเฉลี่ยปัจจุบัน
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-green-900/20 border border-green-700/30">
-                  <div className="font-semibold text-green-300 mb-1">
-                    2. หุ้นที่ซื้อเพิ่ม
-                  </div>
-                  <div className="text-gray-300 font-mono">
-                    เงินลงทุนเพิ่ม ÷ ราคาตลาดปัจจุบัน
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-purple-900/20 border border-purple-700/30">
-                  <div className="font-semibold text-purple-300 mb-1">
-                    3. จำนวนหุ้นรวม
-                  </div>
-                  <div className="text-gray-300 font-mono">
-                    หุ้นเดิม + หุ้นที่ซื้อเพิ่ม
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-yellow-900/20 border border-yellow-700/30">
-                  <div className="font-semibold text-yellow-300 mb-1">
-                    4. มูลค่าการลงทุนรวม
-                  </div>
-                  <div className="text-gray-300 font-mono">
-                    มูลค่าการลงทุนเดิม + เงินลงทุนเพิ่ม
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-orange-900/20 border border-orange-700/30">
-                  <div className="font-semibold text-orange-300 mb-1">
-                    5. ราคาเฉลี่ยใหม่ต่อหุ้น
-                  </div>
-                  <div className="text-gray-300 font-mono">
-                    มูลค่าการลงทุนรวม ÷ จำนวนหุ้นรวม
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-red-900/20 border border-red-700/30">
-                  <div className="font-semibold text-red-300 mb-1">
-                    6. มูลค่าพอร์ตปัจจุบัน
-                  </div>
-                  <div className="text-gray-300 font-mono">
-                    ราคาตลาดปัจจุบัน × จำนวนหุ้นรวม
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-emerald-900/20 border border-emerald-700/30">
-                  <div className="font-semibold text-emerald-300 mb-1">
-                    7. กำไร/ขาดทุน
-                  </div>
-                  <div className="text-gray-300 font-mono">
-                    (ราคาตลาดปัจจุบัน × จำนวนหุ้นรวม) − มูลค่าการลงทุนรวม
-                  </div>
-                </div>
-
-                <div className="p-3 rounded-lg bg-pink-900/20 border border-pink-700/30">
-                  <div className="font-semibold text-pink-300 mb-1">
-                    8. เปอร์เซ็นต์กำไร/ขาดทุน
-                  </div>
-                  <div className="text-gray-300 font-mono">
-                    (กำไร/ขาดทุน ÷ มูลค่าการลงทุนรวม) × 100
-                  </div>
-                </div>
+                ))}
               </div>
             </DialogContent>
-            <DialogActions
-              sx={{
-                borderTop: "1px solid #374151",
-                p: 2,
-              }}
-            >
+            <DialogActions sx={{ borderTop: "1px solid #374151", p: 2 }}>
               <Button
                 onClick={() => setOpenFormula(false)}
                 sx={{
                   color: "#E5E7EB",
-                  "&:hover": {
-                    backgroundColor: "rgba(75, 85, 99, 0.3)",
-                  },
+                  "&:hover": { backgroundColor: "rgba(75, 85, 99, 0.3)" },
                 }}
               >
                 ปิด
@@ -346,7 +380,7 @@ const AverageCostCalculator = () => {
             </DialogActions>
           </Dialog>
 
-          {/* Main Header */}
+          {/* ── Page title ── */}
           <div className="text-center my-8">
             <div className="inline-flex items-center justify-center w-16 h-16 bg-gray-700 rounded-xl mb-4">
               <svg
@@ -372,7 +406,7 @@ const AverageCostCalculator = () => {
           </div>
 
           <div className="p-8 pt-0">
-            {/* Flow Explanation */}
+            {/* ── How it works ── */}
             <div className="mb-8 p-6 bg-gradient-to-r from-blue-900/30 to-purple-500/30 rounded-xl border border-blue-800/30">
               <h3 className="text-lg font-semibold text-gray-100 mb-4 flex items-center">
                 <svg
@@ -391,43 +425,42 @@ const AverageCostCalculator = () => {
                 วิธีการคำนวณ
               </h3>
               <div className="grid grid-cols-1 md:grid-cols-3 gap-4 text-sm">
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-blue-600 rounded-full flex items-center justify-center text-white font-bold">
-                    1
-                  </div>
-                  <div>
-                    <div className="text-gray-200 font-medium">
-                      ข้อมูลปัจจุบัน
+                {[
+                  {
+                    num: 1,
+                    color: "bg-blue-600",
+                    title: "ข้อมูลปัจจุบัน",
+                    sub: "จำนวนหุ้นและราคาเฉลี่ย",
+                  },
+                  {
+                    num: 2,
+                    color: "bg-green-600",
+                    title: "ข้อมูลตลาด",
+                    sub: "ราคาตลาดและเงินลงทุนเพิ่ม",
+                  },
+                  {
+                    num: 3,
+                    color: "bg-yellow-600",
+                    title: "ผลลัพธ์",
+                    sub: "ราคาเฉลี่ยใหม่และกำไร/ขาดทุน",
+                  },
+                ].map(({ num, color, title, sub }) => (
+                  <div key={num} className="flex items-center space-x-3">
+                    <div
+                      className={`w-8 h-8 ${color} rounded-full flex items-center justify-center text-white font-bold flex-shrink-0`}
+                    >
+                      {num}
                     </div>
-                    <div className="text-gray-400">จำนวนหุ้นและราคาเฉลี่ย</div>
-                  </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-green-600 rounded-full flex items-center justify-center text-white font-bold">
-                    2
-                  </div>
-                  <div>
-                    <div className="text-gray-200 font-medium">ข้อมูลตลาด</div>
-                    <div className="text-gray-400">
-                      ราคาตลาดและเงินลงทุนเพิ่ม
+                    <div>
+                      <div className="text-gray-200 font-medium">{title}</div>
+                      <div className="text-gray-400">{sub}</div>
                     </div>
                   </div>
-                </div>
-                <div className="flex items-center space-x-3">
-                  <div className="w-8 h-8 bg-yellow-600 rounded-full flex items-center justify-center text-white font-bold">
-                    3
-                  </div>
-                  <div>
-                    <div className="text-gray-200 font-medium">ผลลัพธ์</div>
-                    <div className="text-gray-400">
-                      ราคาเฉลี่ยใหม่และกำไร/ขาดทุน
-                    </div>
-                  </div>
-                </div>
+                ))}
               </div>
             </div>
 
-            {/* Error Alert */}
+            {/* ── Error ── */}
             {error && (
               <div className="mb-6">
                 <Alert
@@ -437,9 +470,7 @@ const AverageCostCalculator = () => {
                     color: "#FCA5A5",
                     border: "1px solid rgba(220, 38, 38, 0.2)",
                     borderRadius: "12px",
-                    "& .MuiAlert-icon": {
-                      color: "#FCA5A5",
-                    },
+                    "& .MuiAlert-icon": { color: "#FCA5A5" },
                   }}
                 >
                   {error}
@@ -447,8 +478,187 @@ const AverageCostCalculator = () => {
               </div>
             )}
 
-            {/* Form */}
+            {/* ── Form ── */}
             <div className="space-y-6">
+              {/* ── Ticker Autocomplete (full width) ── */}
+              <div className="space-y-2">
+                <label className="block text-sm font-medium text-gray-300 mb-2">
+                  🔍 ค้นหาหุ้น (Ticker)
+                  {tickers.length === 0 && (
+                    <span className="ml-2 text-xs text-yellow-400 font-normal">
+                      (ไม่พบข้อมูลใน localStorage – พิมพ์ราคาเองด้านล่าง)
+                    </span>
+                  )}
+                </label>
+                <Autocomplete
+                  options={tickers}
+                  getOptionLabel={(option) =>
+                    `${option.ticker} – ${option.name}`
+                  }
+                  value={selectedTicker}
+                  onChange={handleTickerSelect}
+                  disabled={loading || tickers.length === 0}
+                  noOptionsText={
+                    <span style={{ color: "#9CA3AF" }}>ไม่พบหุ้น</span>
+                  }
+                  filterOptions={(options, { inputValue }) => {
+                    const q = inputValue.trim().toLowerCase();
+                    if (!q) return options.slice(0, 50); // cap initial list
+                    return options.filter(
+                      (o) =>
+                        o.ticker.toLowerCase().startsWith(q) ||
+                        o.name.toLowerCase().includes(q),
+                    );
+                  }}
+                  renderOption={(props, option) => {
+                    const isUp = option.changePercent >= 0;
+                    return (
+                      <Box
+                        component="li"
+                        {...props}
+                        sx={{
+                          backgroundColor: "#1F2937 !important",
+                          "&:hover": { backgroundColor: "#374151 !important" },
+                          "&.Mui-focused": {
+                            backgroundColor: "#374151 !important",
+                          },
+                          py: 1.5,
+                          px: 2,
+                          display: "flex",
+                          alignItems: "center",
+                          gap: 1.5,
+                        }}
+                      >
+                        {/* Ticker badge */}
+                        <span
+                          style={{
+                            minWidth: 60,
+                            padding: "2px 8px",
+                            borderRadius: 6,
+                            background: "#0077E7",
+                            color: "#fff",
+                            fontWeight: 700,
+                            fontSize: 13,
+                            letterSpacing: 0.5,
+                            textAlign: "center",
+                          }}
+                        >
+                          {option.ticker}
+                        </span>
+
+                        {/* Name */}
+                        <span
+                          style={{
+                            color: "#E5E7EB",
+                            fontSize: 14,
+                            flex: 1,
+                            overflow: "hidden",
+                            textOverflow: "ellipsis",
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {option.name}
+                        </span>
+
+                        {/* Price + change */}
+                        <span
+                          style={{
+                            color: "#F9FAFB",
+                            fontSize: 13,
+                            fontWeight: 600,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          $
+                          {option.price.toLocaleString("en-US", {
+                            minimumFractionDigits: 2,
+                            maximumFractionDigits: 2,
+                          })}
+                        </span>
+                        <span
+                          style={{
+                            color: isUp ? "#34D399" : "#F87171",
+                            fontSize: 12,
+                            whiteSpace: "nowrap",
+                          }}
+                        >
+                          {isUp ? "▲" : "▼"}{" "}
+                          {Math.abs(option.changePercent).toFixed(2)}%
+                        </span>
+                      </Box>
+                    );
+                  }}
+                  PaperComponent={({ children, ...rest }) => (
+                    <Box
+                      {...rest}
+                      sx={{
+                        backgroundColor: "#1F2937",
+                        border: "1px solid #374151",
+                        borderRadius: "12px",
+                        boxShadow: "0 10px 40px rgba(0,0,0,0.5)",
+                        mt: 0.5,
+                        overflow: "hidden",
+                        "& .MuiAutocomplete-listbox": {
+                          padding: 0,
+                          maxHeight: 320,
+                          "&::-webkit-scrollbar": { width: 6 },
+                          "&::-webkit-scrollbar-track": {
+                            background: "#1F2937",
+                          },
+                          "&::-webkit-scrollbar-thumb": {
+                            background: "#4B5563",
+                            borderRadius: 3,
+                          },
+                        },
+                      }}
+                    >
+                      {children}
+                    </Box>
+                  )}
+                  renderInput={(params) => (
+                    <TextField
+                      {...params}
+                      placeholder="เช่น AAPL, NVDA, TSLA …"
+                      variant="outlined"
+                      sx={autocompleteInputStyle}
+                    />
+                  )}
+                />
+
+                {/* Selected ticker info card */}
+                {selectedTicker && (
+                  <div className="mt-2 p-3 rounded-xl bg-gray-700/50 border border-gray-600 flex items-center gap-4 flex-wrap">
+                    <span className="bg-blue-600 text-white text-xs font-bold px-2 py-1 rounded-md">
+                      {selectedTicker.ticker}
+                    </span>
+                    <span className="text-gray-300 text-sm flex-1">
+                      {selectedTicker.name}
+                    </span>
+                    <div className="flex items-center gap-2">
+                      <span className="text-gray-100 font-semibold text-sm">
+                        $
+                        {selectedTicker.price.toLocaleString("en-US", {
+                          minimumFractionDigits: 2,
+                          maximumFractionDigits: 2,
+                        })}
+                      </span>
+                      <span
+                        className={`text-xs font-medium ${selectedTicker.changePercent >= 0 ? "text-green-400" : "text-red-400"}`}
+                      >
+                        {selectedTicker.changePercent >= 0 ? "▲" : "▼"}{" "}
+                        {Math.abs(selectedTicker.changePercent).toFixed(2)}%
+                      </span>
+                    </div>
+                    {selectedTicker.sector && (
+                      <span className="text-gray-500 text-xs hidden sm:inline truncate max-w-xs">
+                        {selectedTicker.sector}
+                      </span>
+                    )}
+                  </div>
+                )}
+              </div>
+
+              {/* ── 2×2 input grid ── */}
               <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
@@ -491,6 +701,11 @@ const AverageCostCalculator = () => {
                 <div className="space-y-2">
                   <label className="block text-sm font-medium text-gray-300 mb-2">
                     📈 ราคาตลาดปัจจุบัน
+                    {selectedTicker && (
+                      <span className="ml-2 text-xs text-blue-400 font-normal">
+                        (กรอกอัตโนมัติจาก {selectedTicker.ticker})
+                      </span>
+                    )}
                   </label>
                   <TextField
                     placeholder="เช่น 45.00"
@@ -503,7 +718,20 @@ const AverageCostCalculator = () => {
                     InputProps={{
                       endAdornment: <span className="text-gray-400">บาท</span>,
                     }}
-                    sx={textFieldStyle}
+                    sx={{
+                      ...textFieldStyle,
+                      // Highlight the field when auto-filled
+                      ...(selectedTicker && {
+                        "& .MuiOutlinedInput-root": {
+                          ...((textFieldStyle[
+                            "& .MuiOutlinedInput-root"
+                          ] as Record<string, unknown>) ?? {}),
+                          backgroundColor: "#1e3a5f",
+                          "& fieldset": { borderColor: "#3b82f6" },
+                          "&:hover fieldset": { borderColor: "#60a5fa" },
+                        },
+                      }),
+                    }}
                   />
                 </div>
 
@@ -527,7 +755,7 @@ const AverageCostCalculator = () => {
                 </div>
               </div>
 
-              {/* Calculate Button */}
+              {/* ── Calculate button ── */}
               <Button
                 variant="contained"
                 fullWidth
@@ -567,7 +795,7 @@ const AverageCostCalculator = () => {
               </Button>
             </div>
 
-            {/* Result Display */}
+            {/* ── Results ── */}
             {result && (
               <div className="mt-8 bg-gray-750 rounded-xl p-6">
                 <div className="space-y-4">
@@ -589,10 +817,7 @@ const AverageCostCalculator = () => {
                         </div>
                         <div className="text-right">
                           <span
-                            className={`text-lg font-bold ${getValueColor(
-                              key,
-                              value
-                            )}`}
+                            className={`text-lg font-bold ${getValueColor(key, value)}`}
                           >
                             {value.toLocaleString("th-TH", {
                               minimumFractionDigits: 2,
@@ -602,19 +827,15 @@ const AverageCostCalculator = () => {
                           </span>
                         </div>
                       </div>
-
-                      {/* Progress bar for percentage */}
                       {key === "profitLossPercentage" && (
                         <div className="mt-4">
                           <div className="w-full bg-gray-600 rounded-full h-2">
                             <div
-                              className={`h-2 rounded-full transition-all duration-500 ${
-                                value >= 0 ? "bg-green-400" : "bg-red-400"
-                              }`}
+                              className={`h-2 rounded-full transition-all duration-500 ${value >= 0 ? "bg-green-400" : "bg-red-400"}`}
                               style={{
                                 width: `${Math.min(Math.abs(value), 100)}%`,
                               }}
-                            ></div>
+                            />
                           </div>
                         </div>
                       )}

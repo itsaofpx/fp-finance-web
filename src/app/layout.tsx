@@ -4,7 +4,8 @@ import NavBar from "@/components/NavBar/page";
 import Footer from "@/components/Footer/landingFooter";
 import "@/styles/globals.css";
 import ToolLayout from "@/components/Sidebar/toolSidebar";
-import 'katex/dist/katex.min.css';
+import "katex/dist/katex.min.css";
+import { SP500Provider } from "@/context/SP500Context";
 
 export default function RootLayout({
   children,
@@ -18,7 +19,8 @@ export default function RootLayout({
   const isGetStartedPath = pathname.startsWith("/get-started");
   const isPlanPath = pathname.startsWith("/plan");
 
-  const bodyClass = "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen";
+  const bodyClass =
+    "bg-gradient-to-br from-gray-900 via-gray-800 to-gray-900 min-h-screen";
 
   if (isPricePath || isGetStartedPath) {
     return (
@@ -53,9 +55,11 @@ export default function RootLayout({
   return (
     <html lang="en">
       <body className={bodyClass}>
-        <NavBar />
-        {children}
-        <Footer />
+        <SP500Provider>
+          <NavBar />
+          {children}
+          <Footer />
+        </SP500Provider>
       </body>
     </html>
   );

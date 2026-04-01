@@ -21,7 +21,6 @@ import OnboardingTutorial from "@/components/Onboarding/OnboardingTutorial";
 import { parseCookies } from "nookies";
 import { stockCategories, tools } from "./data/data";
 
-// Interfaces
 interface IStock {
   ticker: string;
   price: number;
@@ -58,7 +57,6 @@ const HubPage = () => {
   const [showToolsInfo, setShowToolsInfo] = useState(false);
 
 
-  // --- Utility Functions ---
   const getCookie = (name: string): string | null => {
     const value = `; ${document.cookie}`;
     const parts = value.split(`; ${name}=`);
@@ -77,7 +75,6 @@ const HubPage = () => {
   };
 
 
-  // --- Effects ---
   useEffect(() => {
     const accountData = parseAccountFromCookie();
     if (!accountData) {
